@@ -1,0 +1,226 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>インクリメンタル — 完全版（タブ・設定・Inspector組込）</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    #mainHeader { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
+    #mainTabs { display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; }
+    .tabBtn { padding:8px 12px; border-radius:8px; background:#173142; color:#e6eef8; border:none; cursor:pointer; font-weight:bold; }
+    .tabBtn.active { background:var(--accent); color:#fff; transform:translateY(-1px); box-shadow:0 4px 12px rgba(37,99,235,0.4); }
+    .tabPane{ display:none; }
+    .statusBar{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .statusItem{ background:var(--glass); padding:8px 12px; border-radius:10px; min-width:120px; text-align:left; border:1px solid rgba(255,255,255,0.05); }
+    .muted.small.inline{ display:inline-block; margin-left:6px; color:var(--muted); font-size:0.9rem; }
+    #headerRight{ display:flex; gap:8px; align-items:center; }
+    @media (max-width:900px){ #mainHeader{flex-direction:column; align-items:stretch} #mainTabs{order:2} }
+  </style>
+</head>
+<body>
+  <header id="mainHeader">
+    <div>
+      <h1 style="margin:0 0 6px">インクリメンタル</h1>
+      <p class="muted" style="margin:0">完全版 — UI整理・Ascension・ヘルプ統合</p>
+    </div>
+
+    <div id="headerRight">
+      <div class="statusBar">
+        <div class="statusItem">
+          <div class="muted small">所持金</div>
+          <div id="gold" class="big" style="color:#ffd166;">0</div>
+        </div>
+        <div class="statusItem">
+          <div class="muted small">生産量 (GPS)</div>
+          <div id="gps">0</div>
+        </div>
+        <div class="statusItem">
+          <div class="muted small">最終セーブ</div>
+          <div id="lastSave" class="muted small inline">—</div>
+        </div>
+        <div class="statusItem">
+          <div class="muted small">累計ゴールド</div>
+          <div id="totalEarned" class="muted small inline">0</div>
+        </div>
+        <div class="statusItem">
+          <div class="muted small">レガシー (所持)</div>
+          <div id="legacyAvail" class="muted small inline" style="color:#2dd4bf; font-weight:bold;">0</div>
+        </div>
+        <div class="statusItem">
+          <div class="muted small">Ascension (AP)</div>
+          <div id="ascAvail" class="muted small inline" style="color:#f472b6; font-weight:bold;">0</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <nav id="mainTabs">
+    <button class="tabBtn active" data-tab="play">プレイ</button>
+    <button class="tabBtn" data-tab="upgrades">アップグレード</button>
+    <button class="tabBtn" data-tab="legacy">レガシー</button>
+    <button class="tabBtn" data-tab="ascension">Ascension</button>
+    <button class="tabBtn" data-tab="achievements">実績</button>
+    <button class="tabBtn" data-tab="settings">設定・セーブ</button>
+    <button class="tabBtn" data-tab="help">ヘルプ</button>
+  </nav>
+
+  <main class="layout">
+    <section class="col maincol">
+      <div id="tab-play" class="tabPane">
+        <div class="card">
+          <h3>ユニット</h3>
+          <div id="unitsCard"></div>
+        </div>
+
+        <div class="card">
+          <h3>プレステージ</h3>
+          <div class="row">
+            <div>
+              <div class="muted small">次に得られるレガシー（見積）: <span id="prestigeGainPreview" style="color:#2dd4bf; font-weight:bold;">0</span></div>
+              <div class="muted small">開始ゴールド（保証）: <span id="startingGoldPreview">0</span></div>
+            </div>
+            <div style="margin-left:auto">
+              <button id="doPrestige" class="accent">プレステージ実行</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tab-upgrades" class="tabPane">
+        <div class="card">
+          <h3>ゲーム内アップグレード</h3>
+          <div id="upgradesCard"></div>
+        </div>
+      </div>
+
+      <div id="tab-legacy" class="tabPane">
+        <div class="card">
+          <h3>レガシーツリー（クリックで Inspector）</h3>
+          <div id="svgWrap"><svg id="legacySvg" preserveAspectRatio="xMidYMid meet"></svg></div>
+        </div>
+      </div>
+
+      <div id="tab-ascension" class="tabPane">
+        <div class="card">
+          <h3>Ascension（超越）</h3>
+          <p class="muted small" style="line-height:1.6;">
+            Ascensionを実行すると、ゴールド・ユニット・アップグレード・プレステージ履歴・利用可能レガシーがすべてリセットされる代わりに、強力な <strong>Ascensionポイント(AP)</strong> を獲得します。<br>
+            ※購入済みのレガシーノードと実績は維持されます。
+          </p>
+          <div class="row" style="margin-top:12px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.1);">
+            <div>
+              <div class="muted small">次に得られるAP（見積）: <span id="ascGainPreview" style="color:#f472b6; font-size:1.2rem; font-weight:bold;">0</span> AP</div>
+            </div>
+            <div style="margin-left:auto">
+              <button id="doAscend" class="warn">Ascend 実行</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Ascension Shop</h3>
+          <p class="muted small">獲得したAPを消費して、リセットしても消えない究極の恒久ブーストを購入します。</p>
+          <div id="ascShop" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
+      <div id="tab-achievements" class="tabPane">
+        <div class="card">
+          <h3>実績</h3>
+          <div id="achList"></div>
+        </div>
+      </div>
+
+      <div id="tab-settings" class="tabPane">
+        <div class="card" id="settingsCard">
+          </div>
+
+        <div class="card savebox" style="margin-top:12px;">
+          <h3>データ管理（セーブ / ロード）</h3>
+          <div class="row">
+            <button id="downloadSave">ダウンロード</button>
+            <button id="copySave">クリップボードへコピー</button>
+            <button id="reset" style="background:#ef4444; margin-left:auto;">全データリセット</button>
+          </div>
+          <textarea id="pasteJson" placeholder="セーブデータ(JSON)をここに貼り付けてインポートできます" style="margin-top:12px;"></textarea>
+          <div class="row" style="margin-top:8px;">
+            <button id="importPasteBtn">テキストから読み込む</button>
+            <button id="previewPasteBtn" class="small alt">構造チェック</button>
+            <button id="triggerFileInput" class="small alt">ファイルから読み込む</button>
+            <input id="fileInput" type="file" accept=".json" style="display:none"/>
+          </div>
+          <div id="importStatus" class="muted small" style="margin-top:6px;">—</div>
+        </div>
+      </div>
+
+      <div id="tab-help" class="tabPane">
+        <div class="card">
+          <h3>ゲーム内ヘルプ</h3>
+          <div id="helpContent" style="line-height: 1.7;">
+            <h4 style="color:var(--accent);">💰 基本サイクル</h4>
+            <p class="small muted" style="margin-top:4px;">ユニットを購入して「GPS（秒間ゴールド生産量）」を増やし、ゴールドを稼ぎます。アップグレードを購入すると、特定のユニットや全体の生産効率が倍増します。</p>
+
+            <h4 style="color:#2dd4bf; margin-top:16px;">♻️ プレステージ (Prestige)</h4>
+            <p class="small muted" style="margin-top:4px;">プレイが行き詰まってきたら「プレステージ」を行いましょう。進行がリセットされる代わりに「レガシー」を獲得します。レガシータブで強力なスキルツリー（永続効果）を解放でき、次の周回が圧倒的に早くなります。</p>
+
+            <h4 style="color:#f472b6; margin-top:16px;">✨ Ascension (超越)</h4>
+            <p class="small muted" style="margin-top:4px;">プレステージを何度も繰り返し、さらに先へ進むための究極のリセット機能です。Ascensionポイント(AP)を使って、レガシーとは別枠の強力な「恒久ブースト」をショップで購入できます。</p>
+
+            <h4 style="color:#ffd166; margin-top:16px;">🏆 実績 (Achievements)</h4>
+            <p class="small muted" style="margin-top:4px;">特定の条件を満たすと実績が解除され、ゲーム全体に強力なパッシブボーナスが付与されます。</p>
+
+            <h4 style="margin-top:16px;">💡 ヒント</h4>
+            <ul class="small muted" style="margin-top:4px; padding-left:20px;">
+              <li><strong>Inspector機能：</strong> レガシーツリーのノードをクリックすると、右側に詳細が表示され「nレベル上げたときの増加量プレビュー」を確認できます。</li>
+              <li>設定タブから、数字の表示形式（コンパクト / 指数）や各種通知のON/OFFを切り替えられます。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="col sidecol">
+      <div id="tab-inspector" style="display:block">
+        <div class="card inspector">
+          <h3>Inspector (レガシー詳細)</h3>
+          <div id="ins_none" class="muted">ツリーのノードをクリックしてください</div>
+          <div id="ins_box" style="display:none">
+            <div><strong id="ins_name" style="font-size:1.1rem; color:#2dd4bf;"></strong></div>
+            <div id="ins_desc" class="muted small" style="margin-bottom:8px;"></div>
+            <div class="muted small">現在Lv: <span id="ins_lvl" style="color:#fff;">0</span> / <span id="ins_max">—</span></div>
+            <div class="muted small">前提: <span id="ins_prereq">—</span></div>
+            <div class="muted small">効果: <span id="ins_next_effect" style="color:#ffd166;">—</span></div>
+            <div class="muted small">次Lvコスト: <strong id="ins_next_cost" style="color:#fff;">—</strong></div>
+
+            <hr style="border-color:rgba(255,255,255,0.1); margin:12px 0;">
+
+            <div class="muted small">累積プレビュー (+n)</div>
+            <div class="row" style="margin-top:4px;">
+              <input id="ins_preview_n" type="number" min="1" value="1" />
+              <button id="ins_preview_btn" class="small">プレビュー</button>
+            </div>
+            <pre id="ins_preview_result" class="muted small previewbox">プレビュー結果がここに表示されます。</pre>
+
+            <div class="row" style="margin-top:12px;">
+              <button id="ins_buy1">Lv +1 購入</button>
+              <button id="ins_buyMax" class="small warn">最大購入</button>
+              <button id="ins_close" class="small alt" style="margin-left:auto;">閉じる</button>
+            </div>
+          </div>
+        </div>
+        <div class="card hintbox">
+          <div class="muted small">💡 ヒント: Inspector のプレビューは、現在の全てのバフを加味して実際にシミュレーション計算を行います。</div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast"></div>
+
+  <script src="config.js"></script>
+  <script src="state.js"></script>
+  <script src="engine.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>
