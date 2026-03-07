@@ -9,7 +9,7 @@
   function deepCopy(o){ return JSON.parse(JSON.stringify(o)); }
 
   const defaultState = {
-    version: 6,
+    version: 7,
     gold: C.STARTING_GOLD,
     units: C.UNIT_DEFS.reduce((a,u)=>(a[u.id]=0,a),{}),
     upgrades: C.UPGRADE_DEFS.reduce((a,u)=>(a[u.id]=0,a),{}),
@@ -22,7 +22,7 @@
     ascPoints: 0,
     ascEarnedTotal: 0,
     ascOwned: C.ASC_UPGRADES.reduce((a,u)=>(a[u.id]=0,a),{}),
-    settings: { notation:'compact', activeTab:'play' },
+    settings: { notation:'compact', activeTab:'play', autoBuy:{ enabled:false, units:true, upgrades:true, intervalSec:0.5 } },
     achievementsOwned: {},
     achievementsProgress: {}
   };
@@ -40,6 +40,7 @@
     merged.ascOwned = merged.ascOwned || {};
     for (const a of C.ASC_UPGRADES) if (!(a.id in merged.ascOwned)) merged.ascOwned[a.id]=0;
     merged.settings = merged.settings || deepCopy(defaultState.settings);
+    merged.settings.autoBuy = Object.assign({}, defaultState.settings.autoBuy, merged.settings.autoBuy || {});
     merged.achievementsOwned = merged.achievementsOwned || {};
     merged.achievementsProgress = merged.achievementsProgress || {};
     return merged;

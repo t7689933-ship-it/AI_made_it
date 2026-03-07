@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>インクリメンタル — 完全版（タブ・設定・Inspector組込）</title>
+  <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="game/styles.css">
   <style>
     #mainHeader { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:12px; }
@@ -105,6 +106,8 @@
         <div class="card">
           <h3>Ascension（超越）</h3>
           <p class="muted small" style="line-height:1.6;">
+            Ascensionを実行すると、ゴールド・ユニット・アップグレード・プレステージ履歴・累計ゴールド・利用可能レガシー・レガシーツリーがリセットされる代わりに、強力な <strong>Ascensionポイント(AP)</strong> を獲得します。<br>
+            ※一部のAscensionショップ強化で、累計ゴールドやレガシーツリーの維持を解放できます。
             Ascensionを実行すると、ゴールド・ユニット・アップグレード・プレステージ履歴・利用可能レガシーがすべてリセットされる代わりに、強力な <strong>Ascensionポイント(AP)</strong> を獲得します。<br>
             ※購入済みのレガシーノードと実績は維持されます。
           </p>
@@ -122,6 +125,19 @@
           <h3>Ascension Shop</h3>
           <p class="muted small">獲得したAPを消費して、リセットしても消えない究極の恒久ブーストを購入します。</p>
           <div id="ascShop" style="margin-top:12px;"></div>
+        </div>
+
+        <div class="card">
+          <h3>自動購入</h3>
+          <p class="muted small">「自律運用OS」を購入すると、ユニット/アップグレードの自動購入を有効化できます。</p>
+          <div class="row" style="margin-top:8px;"><label class="muted small"><input type="checkbox" id="autoBuyEnable"> 自動購入を有効化</label></div>
+          <div class="row"><label class="muted small"><input type="checkbox" id="autoBuyUnits"> ユニットを対象</label></div>
+          <div class="row"><label class="muted small"><input type="checkbox" id="autoBuyUpgrades"> アップグレードを対象</label></div>
+          <div class="row" style="margin-top:8px; gap:8px; align-items:center;">
+            <label class="muted small">実行間隔(秒)</label>
+            <input id="autoBuyInterval" type="number" min="0.1" step="0.1" value="0.5" style="width:90px;" />
+            <span id="autoBuyStatus" class="muted small">未解放</span>
+          </div>
         </div>
       </div>
 
@@ -218,6 +234,10 @@
 
   <div id="toast" class="toast"></div>
 
+  <script src="config.js"></script>
+  <script src="state.js"></script>
+  <script src="engine.js"></script>
+  <script src="ui.js"></script>
   <script src="game/config.js"></script>
   <script src="game/state.js"></script>
   <script src="game/engine.js"></script>
