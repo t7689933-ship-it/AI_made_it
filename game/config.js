@@ -3,7 +3,7 @@
   window.CONFIG = {};
 
   const C = {
-    SAVE_KEY: 'inc.split.full.v3',
+    SAVE_KEY: 'inc.split.full.v4',
     UI_UPDATE_INTERVAL_MS: 50,
     AUTO_SAVE_INTERVAL: 5000,
     MAX_OFFLINE_SECONDS: 60*60*24,
@@ -14,9 +14,9 @@
   };
 
   C.UNIT_DEFS = [
-    { id:'junior', name:'ジュニア採掘機', baseCost:5,   costMult:1.12, baseGPS:0.25, desc:'生産:0.25×所持数' },
-    { id:'miner',  name:'採掘機',       baseCost:20,  costMult:1.15, baseGPS:1.2,  desc:'生産:1.2×所持数' },
-    { id:'excav',  name:'エクスカベーター', baseCost:500, costMult:1.18, baseGPS:40,   desc:'生産:40×所持数' }
+    { id:'junior', name:'ジュニア採掘機', baseCost:4,   costMult:1.11, baseGPS:0.35, desc:'生産:0.35×所持数' },
+    { id:'miner',  name:'採掘機',       baseCost:18,  costMult:1.14, baseGPS:1.6,  desc:'生産:1.6×所持数' },
+    { id:'excav',  name:'エクスカベーター', baseCost:900, costMult:1.2, baseGPS:32,   desc:'生産:32×所持数' }
   ];
 
   C.UPGRADE_DEFS = [
@@ -29,8 +29,8 @@
     { id:'lg_miner25', name:'鉱夫育成',    desc:'採掘機 ×1.25 /Lv', baseCost:2,  costMult:2.2, maxLevel:4, x:320,  y:170, type:'unitMult', payload:{unitId:'miner', multPerLevel:0.25}, prereq:[{id:'lg_global10',minLevel:1}] },
     { id:'lg_miner_x2', name:'機械化支援', desc:'採掘機 ×1.5 /Lv',  baseCost:4,  costMult:2.4, maxLevel:3, x:480,  y:170, type:'unitMult', payload:{unitId:'miner', multPerLevel:0.5}, prereq:[{id:'lg_miner25',minLevel:2}] },
     { id:'lg_cost5', name:'経済学習',       desc:'コスト ×0.95 /Lv', baseCost:2,  costMult:1.9, maxLevel:4, x:320,  y:320, type:'costMult', payload:{multPerLevel:0.95}, prereq:[{id:'lg_global10',minLevel:1}]},
-    { id:'lg_seed50', name:'種銭支給',     desc:'開始ゴールド +50 /Lv', baseCost:2, costMult:1.8, maxLevel:3, x:150, y:320, type:'startGold', payload:{amountPerLevel:50}, prereq:[]},
-    { id:'lg_passive', name:'永続配当',    desc:'恒久 +1 GPS /Lv', baseCost:8, costMult:2.5, maxLevel:3, x:920,  y:120, type:'flatGPS', payload:{gpsPerLevel:1}, prereq:[{id:'lg_global10',minLevel:2}]},
+    { id:'lg_seed50', name:'種銭支給',     desc:'開始ゴールド +150 /Lv', baseCost:2, costMult:1.7, maxLevel:5, x:150, y:320, type:'startGold', payload:{amountPerLevel:150}, prereq:[]},
+    { id:'lg_passive', name:'永続配当',    desc:'恒久 +5 GPS /Lv', baseCost:8, costMult:2.3, maxLevel:4, x:920,  y:120, type:'flatGPS', payload:{gpsPerLevel:5}, prereq:[{id:'lg_global10',minLevel:2}]},
     { id:'lg_mega', name:'遺産の賢王',     desc:'全体 ×1.5 (Lv1)', baseCost:20, costMult:1.0, maxLevel:1, x:920,  y:400, type:'globalMult', payload:{multPerLevel:0.5}, prereq:[{id:'lg_passive',minLevel:1}]},
 
     { id:'lg_titan_forge', name:'タイタン鍛造所', desc:'全体 ×2.5 /Lv', baseCost:60,  costMult:3.2, maxLevel:2, x:1140, y:60,  type:'globalMult', payload:{multPerLevel:1.5}, prereq:[{id:'lg_mega',minLevel:1}] },
@@ -44,12 +44,17 @@
   ];
 
   C.ASC_UPGRADES = [
-    { id:'asc_global20', name:'永遠の研究', desc:'恒久: 全体 ×1.20', cost:1, type:'globalMult', payload:{mult:1.20}, maxLevel:3 },
-    { id:'asc_flat50',   name:'黄金の配当', desc:'恒久: +50 GPS', cost:2, type:'flatGPS', payload:{gps:50}, maxLevel:1 },
+    { id:'asc_global20', name:'永遠の研究', desc:'恒久: 全体 ×1.30', cost:1, type:'globalMult', payload:{mult:1.30}, maxLevel:4 },
+    { id:'asc_flat50',   name:'黄金の配当', desc:'恒久: +100 GPS', cost:2, type:'flatGPS', payload:{gps:100}, maxLevel:2 },
     { id:'asc_prestige_boost', name:'超越の加護', desc:'恒久: +0.02 prestige effect /Lv', cost:3, type:'prestigeEffectAdd', payload:{add:0.02}, maxLevel:2 },
     { id:'asc_galactic_mult', name:'銀河の恩寵', desc:'恒久: 全体 ×3.0', cost:4, type:'globalMult', payload:{mult:3.0}, maxLevel:1 },
     { id:'asc_colossus_gps',  name:'巨像の配当', desc:'恒久: +500 GPS', cost:6, type:'flatGPS', payload:{gps:500}, maxLevel:1 },
     { id:'asc_prestige_super', name:'超越の祝福', desc:'恒久: +0.10 prestige effect', cost:4, type:'prestigeEffectAdd', payload:{add:0.10}, maxLevel:1 },
+    { id:'asc_seed_core', name:'創世資金コア', desc:'恒久: 開始ゴールド +1200', cost:5, type:'startGoldFlat', payload:{gold:1200}, maxLevel:1 },
+    { id:'asc_passive_reactor', name:'反応炉配当', desc:'恒久: +1200 GPS', cost:7, type:'flatGPS', payload:{gps:1200}, maxLevel:1 },
+    { id:'asc_keep_total_gold', name:'記録保全プロトコル', desc:'Ascend時に累計ゴールドを維持', cost:8, type:'special', payload:{kind:'keepTotalGold'}, maxLevel:1 },
+    { id:'asc_keep_legacy_tree', name:'レガシー写像保存', desc:'Ascend時にレガシーツリーを維持', cost:12, type:'special', payload:{kind:'keepLegacyTree'}, maxLevel:1 },
+    { id:'asc_unlock_autobuy', name:'自律運用OS', desc:'自動購入機能を解放', cost:6, type:'special', payload:{kind:'unlockAutobuy'}, maxLevel:1 },
     { id:'asc_cosmic_multiplier', name:'天の倍加', desc:'恒久: 全体 ×10.0', cost:12, type:'globalMult', payload:{mult:10.0}, maxLevel:1 },
     { id:'asc_mythic_gps', name:'神話の配当', desc:'恒久: +2500 GPS', cost:15, type:'flatGPS', payload:{gps:2500}, maxLevel:1 }
   ];

@@ -69,10 +69,10 @@
       if (a.type === 'globalMult') globalMult *= Math.pow(a.payload.mult||1, lvl);
       if (a.type === 'flatGPS') flatGPS += (a.payload.gps||0) * lvl;
       if (a.type === 'prestigeEffectAdd') prestigeEffectAdd += (a.payload.add||0) * lvl;
+      if (a.type === 'startGoldFlat') startingGoldBonus += (a.payload.gold||0) * lvl;
     }
 
-    return { globalMult, unitMults, costMult, startingGoldBonus, startingUnits, prestigeEffectAdd, flatGPS };
-        // --- 実績の恒久ボーナスを適用 ---
+    // --- 実績の恒久ボーナスを適用 ---
     if (C.ACHIEVEMENTS && Array.isArray(C.ACHIEVEMENTS)) {
       for (const ach of C.ACHIEVEMENTS) {
         if (!st.achievementsOwned || !st.achievementsOwned[ach.id]) continue;
@@ -89,6 +89,16 @@
     // --------------------------------
     return { globalMult, unitMults, costMult, startingGoldBonus, startingUnits, prestigeEffectAdd, flatGPS };
 
+  }
+
+  function hasSpecialAscUpgrade(st, kind){
+    const upgrades = C.ASC_UPGRADES || [];
+    for (const def of upgrades){
+      if (def.type !== 'special') continue;
+      if (!def.payload || def.payload.kind !== kind) continue;
+      if ((st.ascOwned && st.ascOwned[def.id] || 0) > 0) return true;
+    }
+    return false;
   }
 
   function getAggregates(st){
@@ -331,6 +341,8 @@
   function doAscendInternal(){
     const gain = previewAscGain();
     if (gain <= 0) return { ok:false };
+    const keepTotalGold = hasSpecialAscUpgrade(state, 'keepTotalGold');
+    const keepLegacyTree = hasSpecialAscUpgrade(state, 'keepLegacyTree');
     state.ascPoints = (state.ascPoints || 0) + gain;
     state.ascEarnedTotal = (state.ascEarnedTotal || 0) + gain;
     state.gold = computeStartingGoldOnPrestige();
@@ -338,6 +350,8 @@
     state.upgrades = (C.UPGRADE_DEFS || []).reduce((a,u)=>(a[u.id]=0,a),{});
     state.prestigeEarnedTotal = 0;
     state.legacy = 0;
+    if (!keepTotalGold) state.totalGoldEarned = 0;
+    if (!keepLegacyTree) state.legacyNodes = (C.LEGACY_DEFS || []).reduce((a,d)=>(a[d.id]=0,a),{});
     invalidateAggCache(); recalcAndCacheGPS(state);
     return { ok:true, gain };
   }

@@ -68,6 +68,17 @@
   let svgNodeEls = {};
   let svgDirty = true;
   let selectedLegacyId = null;
+  let autoBuyAccumulator = 0;
+
+  function hasAscSpecial(kind){
+    const st = E.getState();
+    for (const def of C.ASC_UPGRADES){
+      if (def.type !== 'special') continue;
+      if (!def.payload || def.payload.kind !== kind) continue;
+      if ((st.ascOwned[def.id] || 0) > 0) return true;
+    }
+    return false;
+  }
 
   // ---------- UI 生成関数 ----------
   function buildUnitsUI(){
@@ -322,6 +333,81 @@
     built.settings = true;
   }
 
+  function syncAutoBuyControls(){
+    const st = E.getState();
+    st.settings = st.settings || {};
+    st.settings.autoBuy = Object.assign({ enabled:false, units:true, upgrades:true, intervalSec:0.5 }, st.settings.autoBuy || {});
+    const unlocked = hasAscSpecial('unlockAutobuy');
+    const enableEl = document.getElementById('autoBuyEnable');
+    const unitsEl = document.getElementById('autoBuyUnits');
+    const upgradesEl = document.getElementById('autoBuyUpgrades');
+    const intervalEl = document.getElementById('autoBuyInterval');
+    const statusEl = document.getElementById('autoBuyStatus');
+    if (!enableEl || !unitsEl || !upgradesEl || !intervalEl || !statusEl) return;
+
+    enableEl.disabled = !unlocked;
+    unitsEl.disabled = !unlocked;
+    upgradesEl.disabled = !unlocked;
+    intervalEl.disabled = !unlocked;
+
+    enableEl.checked = unlocked ? !!st.settings.autoBuy.enabled : false;
+    unitsEl.checked = !!st.settings.autoBuy.units;
+    upgradesEl.checked = !!st.settings.autoBuy.upgrades;
+    intervalEl.value = String(Math.max(0.1, Number(st.settings.autoBuy.intervalSec || 0.5)));
+    statusEl.textContent = unlocked ? '解放済み' : '未解放';
+  }
+
+  function bindAutoBuyControls(){
+    const enableEl = document.getElementById('autoBuyEnable');
+    const unitsEl = document.getElementById('autoBuyUnits');
+    const upgradesEl = document.getElementById('autoBuyUpgrades');
+    const intervalEl = document.getElementById('autoBuyInterval');
+    if (!enableEl || !unitsEl || !upgradesEl || !intervalEl) return;
+    const update = ()=>{
+      const st = E.getState();
+      st.settings = st.settings || {};
+      st.settings.autoBuy = st.settings.autoBuy || {};
+      st.settings.autoBuy.enabled = !!enableEl.checked;
+      st.settings.autoBuy.units = !!unitsEl.checked;
+      st.settings.autoBuy.upgrades = !!upgradesEl.checked;
+      st.settings.autoBuy.intervalSec = Math.max(0.1, Number(intervalEl.value || 0.5));
+      SM.saveState(st);
+    };
+    enableEl.addEventListener('change', update);
+    unitsEl.addEventListener('change', update);
+    upgradesEl.addEventListener('change', update);
+    intervalEl.addEventListener('change', update);
+  }
+
+  function runAutoBuy(dt){
+    const st = E.getState();
+    if (!hasAscSpecial('unlockAutobuy')) return;
+    const cfg = (st.settings && st.settings.autoBuy) ? st.settings.autoBuy : {};
+    if (!cfg.enabled) return;
+    const interval = Math.max(0.1, Number(cfg.intervalSec || 0.5));
+    autoBuyAccumulator += dt;
+    if (autoBuyAccumulator < interval) return;
+    autoBuyAccumulator = 0;
+
+    let changed = false;
+    if (cfg.upgrades){
+      for (const def of C.UPGRADE_DEFS){
+        const res = E.buyUpgradeInternal(def.id);
+        if (res && res.ok) changed = true;
+      }
+    }
+    if (cfg.units){
+      for (const def of C.UNIT_DEFS){
+        const res = E.buyUnitInternal(def.id, 1);
+        if (res && res.ok) changed = true;
+      }
+    }
+    if (changed){
+      syncUIAfterChange();
+      SM.saveState(st);
+    }
+  }
+
   // ---------- syncUIAfterChange ----------
   function syncUIAfterChange(){
     const st = E.getState();
@@ -376,6 +462,7 @@
     if (refs.startingGoldPreview) refs.startingGoldPreview.textContent = fmtNumber(E.computeStartingGoldOnPrestige());
     if (refs.ascGainPreview) refs.ascGainPreview.textContent = fmtNumber(E.previewAscGain());
     if (refs.lastSave) refs.lastSave.textContent = new Date(st.lastSavedAt*1000).toLocaleString();
+    syncAutoBuyControls();
   }
 
   // ---------- mainLoop ----------
@@ -389,6 +476,7 @@
     const st = E.getState();
     st.gold += (st.gpsCache || 0) * dt;
     st.totalGoldEarned += (st.gpsCache || 0) * dt;
+    runAutoBuy(dt);
 
     if (ts - lastUiUpdate >= (C.UI_UPDATE_INTERVAL_MS || 150)){
       lastUiUpdate = ts;
@@ -517,6 +605,7 @@
   // ---------- 初期化 ----------
   document.addEventListener('DOMContentLoaded', ()=>{
     buildUnitsUI(); buildUpgradesUI(); buildAscShop(); buildAchievementsUI(); buildSettingsUI();
+    bindAutoBuyControls();
     cacheRefs();
 
     const off = E.applyOfflineProgressWithToast();
