@@ -314,6 +314,10 @@
       <div class="row"><label class="muted small"><input type="checkbox" id="toastAchievementChk"> 実績解除</label></div>
       <div class="row"><label class="muted small"><input type="checkbox" id="toastOfflineChk"> オフライン報酬</label></div>
       <div class="row"><label class="muted small"><input type="checkbox" id="toastPurchaseChk"> 購入メッセージ</label></div>
+      <div class="row" style="margin-top:12px"><strong>バージョン情報</strong></div>
+      <div class="muted small">App: <span id="appVersionText"></span></div>
+      <div class="muted small">Save Schema: <span id="saveSchemaVersionText"></span></div>
+      <div class="muted small">Current Save: <span id="currentSaveVersionText"></span></div>
     `;
 
     document.getElementById('notationSelect').value = st.settings.notation || 'compact';
@@ -322,6 +326,9 @@
     document.getElementById('toastAchievementChk').checked = !!(st.settings.toast && st.settings.toast.achievement);
     document.getElementById('toastOfflineChk').checked = !!(st.settings.toast && st.settings.toast.offline);
     document.getElementById('toastPurchaseChk').checked = !!(st.settings.toast && st.settings.toast.purchase);
+    document.getElementById('appVersionText').textContent = C.APP_VERSION || 'unknown';
+    document.getElementById('saveSchemaVersionText').textContent = String(SM.saveVersion || C.SAVE_VERSION || '-');
+    document.getElementById('currentSaveVersionText').textContent = String(st.version || '-');
 
     document.getElementById('notationSelect').addEventListener('change', (ev)=>{ st.settings.notation = ev.target.value; SM.saveState(st); syncUIAfterChange(); });
     document.getElementById('confirmLegacyBuyChk').addEventListener('change', (ev)=>{ st.settings.confirmLegacyBuy = !!ev.target.checked; SM.saveState(st); });
@@ -462,6 +469,8 @@
     if (refs.startingGoldPreview) refs.startingGoldPreview.textContent = fmtNumber(E.computeStartingGoldOnPrestige());
     if (refs.ascGainPreview) refs.ascGainPreview.textContent = fmtNumber(E.previewAscGain());
     if (refs.lastSave) refs.lastSave.textContent = new Date(st.lastSavedAt*1000).toLocaleString();
+    const currentSaveVersionEl = document.getElementById('currentSaveVersionText');
+    if (currentSaveVersionEl) currentSaveVersionEl.textContent = String(st.version || '-');
     syncAutoBuyControls();
   }
 
@@ -589,7 +598,7 @@
       try{ const json = JSON.stringify(E.getState(), null, 2); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(json).then(()=>showTypedToast('general','コピーしました')); else document.getElementById('pasteJson').value = json; } catch(e){}
     });
     document.getElementById('importPasteBtn')?.addEventListener('click', ()=>{
-      try{ const obj = JSON.parse(document.getElementById('pasteJson').value.trim()); if (!confirm('上書きしますか？')) return; const migrated = SM.deepCopy(SM.defaultState); Object.assign(migrated, obj); E.setState(migrated); svgDirty=true; syncUIAfterChange(); buildAchievementsUI(); showTypedToast('general','インポート完了'); } catch(e){ alert('JSONエラー: '+e); } 
+      try{ const obj = JSON.parse(document.getElementById('pasteJson').value.trim()); if (!confirm('上書きしますか？')) return; const migrated = SM.importState(obj); E.setState(migrated); svgDirty=true; syncUIAfterChange(); buildAchievementsUI(); buildSettingsUI(); showTypedToast('general','インポート完了'); } catch(e){ alert('インポートエラー: '+e.message); } 
     });
     document.getElementById('reset')?.addEventListener('click', ()=>{
       if (!confirm('本当に全てのデータをリセットしますか？')) return;
@@ -598,7 +607,7 @@
     document.getElementById('triggerFileInput')?.addEventListener('click', ()=> document.getElementById('fileInput').click());
     document.getElementById('fileInput')?.addEventListener('change', (ev)=>{
       const f = ev.target.files && ev.target.files[0]; if (!f) return;
-      const r = new FileReader(); r.onload = ()=>{ try{ const obj = JSON.parse(r.result); if (!confirm('上書きしますか？')) { ev.target.value=''; return; } const migrated = SM.deepCopy(SM.defaultState); Object.assign(migrated, obj); E.setState(migrated); svgDirty=true; syncUIAfterChange(); buildAchievementsUI(); showTypedToast('general','ファイル読み込み完了'); } catch(e){ alert('JSONエラー: '+e); } }; r.readAsText(f); ev.target.value = ''; 
+      const r = new FileReader(); r.onload = ()=>{ try{ const obj = JSON.parse(r.result); if (!confirm('上書きしますか？')) { ev.target.value=''; return; } const migrated = SM.importState(obj); E.setState(migrated); svgDirty=true; syncUIAfterChange(); buildAchievementsUI(); buildSettingsUI(); showTypedToast('general','ファイル読み込み完了'); } catch(e){ alert('インポートエラー: '+e.message); } }; r.readAsText(f); ev.target.value = ''; 
     });
   }
 

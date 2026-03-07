@@ -4,12 +4,13 @@
   if (!C) throw new Error('CONFIG must be loaded before state.js');
 
   const SAVE_KEY = C.SAVE_KEY;
+  const SAVE_VERSION = C.SAVE_VERSION || 1;
 
   function nowSec(){ return Date.now()/1000; }
   function deepCopy(o){ return JSON.parse(JSON.stringify(o)); }
 
   const defaultState = {
-    version: 7,
+    version: SAVE_VERSION,
     gold: C.STARTING_GOLD,
     units: C.UNIT_DEFS.reduce((a,u)=>(a[u.id]=0,a),{}),
     upgrades: C.UPGRADE_DEFS.reduce((a,u)=>(a[u.id]=0,a),{}),
@@ -27,32 +28,65 @@
     achievementsProgress: {}
   };
 
-  function loadRaw(){ try{ const s = localStorage.getItem(SAVE_KEY); return s ? JSON.parse(s) : null; } catch(e){ return null; } }
-  function loadState(){
-    const raw = loadRaw(); if (!raw) return deepCopy(defaultState);
+  function migrateState(raw){
+    if (!raw || typeof raw !== 'object') throw new Error('Invalid save data: object required');
+    const sourceVersion = Number(raw.version || 0);
+    if (sourceVersion > SAVE_VERSION) throw new Error(`このセーブデータは新しいバージョンです (save=${sourceVersion}, app=${SAVE_VERSION})`);
+
     const merged = Object.assign(deepCopy(defaultState), raw);
+    merged.version = SAVE_VERSION;
+
     merged.legacyNodes = merged.legacyNodes || {};
     for (const d of C.LEGACY_DEFS) if (!(d.id in merged.legacyNodes)) merged.legacyNodes[d.id]=0;
+
     merged.upgrades = merged.upgrades || {};
     for (const u of C.UPGRADE_DEFS) if (!(u.id in merged.upgrades)) merged.upgrades[u.id]=0;
+
     merged.units = merged.units || {};
     for (const u of C.UNIT_DEFS) if (!(u.id in merged.units)) merged.units[u.id]=0;
+
     merged.ascOwned = merged.ascOwned || {};
     for (const a of C.ASC_UPGRADES) if (!(a.id in merged.ascOwned)) merged.ascOwned[a.id]=0;
+
     merged.settings = merged.settings || deepCopy(defaultState.settings);
     merged.settings.autoBuy = Object.assign({}, defaultState.settings.autoBuy, merged.settings.autoBuy || {});
+
     merged.achievementsOwned = merged.achievementsOwned || {};
     merged.achievementsProgress = merged.achievementsProgress || {};
     return merged;
   }
 
-  function saveState(s){ try{ s.lastSavedAt = nowSec(); localStorage.setItem(SAVE_KEY, JSON.stringify(s)); const el = document.getElementById('lastSave'); if (el) el.textContent = new Date(s.lastSavedAt*1000).toLocaleString(); } catch(e){ console.error(e); } }
+  function loadRaw(){ try{ const s = localStorage.getItem(SAVE_KEY); return s ? JSON.parse(s) : null; } catch(e){ return null; } }
+  function loadState(){
+    const raw = loadRaw();
+    if (!raw) return deepCopy(defaultState);
+    try {
+      return migrateState(raw);
+    } catch (e){
+      console.warn('Save migration failed, fallback to default state', e);
+      return deepCopy(defaultState);
+    }
+  }
+
+  function importState(raw){ return migrateState(raw); }
+
+  function saveState(s){
+    try{
+      s.version = SAVE_VERSION;
+      s.lastSavedAt = nowSec();
+      localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+      const el = document.getElementById('lastSave');
+      if (el) el.textContent = new Date(s.lastSavedAt*1000).toLocaleString();
+    } catch(e){ console.error(e); }
+  }
 
   // Expose API
   window.StateManager = {
     defaultState: defaultState,
+    saveVersion: SAVE_VERSION,
     loadState: loadState,
     saveState: saveState,
+    importState: importState,
     deepCopy: deepCopy
   };
 })();
