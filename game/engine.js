@@ -71,8 +71,7 @@
       if (a.type === 'prestigeEffectAdd') prestigeEffectAdd += (a.payload.add||0) * lvl;
     }
 
-    return { globalMult, unitMults, costMult, startingGoldBonus, startingUnits, prestigeEffectAdd, flatGPS };
-        // --- 実績の恒久ボーナスを適用 ---
+    // --- 実績の恒久ボーナスを適用 ---
     if (C.ACHIEVEMENTS && Array.isArray(C.ACHIEVEMENTS)) {
       for (const ach of C.ACHIEVEMENTS) {
         if (!st.achievementsOwned || !st.achievementsOwned[ach.id]) continue;
