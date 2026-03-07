@@ -9,6 +9,13 @@
 - [x] 自動購入機能（UI設定 + 実行ループ）
 - [x] 検証ログ記録
 
+## Plan (2026-03-07 バージョン管理機能追加)
+- [x] セーブ/ロード/インポートの現状確認
+- [x] セーブデータのバージョン情報定数化とマイグレーション導入
+- [x] 設定UIにバージョン情報表示を追加
+- [x] インポート時のバージョン検証を追加
+- [x] 検証ログ記録
+
 ## Progress Log
 - config.js: ユニット序盤バランスを調整（ジュニア/採掘機強化、エクスカベーター序盤弱体化）。
 - config.js: 種銭系・GPS系の恒久強化を拡張し、Ascensionショップへ特殊解放を追加。
@@ -16,6 +23,14 @@
 - ui.js / index.html: 自動購入機能を追加し、Ascensionショップ購入で解放される設計に実装。
 - state.js: 自動購入設定の保存項目を追加。
 
+## Progress Log (2026-03-07 バージョン管理機能追加)
+- 着手: state.js / ui.js / index.html / config.js のセーブデータ取り扱い箇所を確認。
+- config.js: SAVE_VERSION / APP_VERSION を追加し、バージョン定義を一元化。
+- state.js: migrateState/importState/saveVersion を追加し、future version のインポート拒否と保存時 version 強制更新を実装。
+- ui.js: 設定画面に App/Save Schema/Current Save version を表示し、インポート処理を StateManager.importState 経由へ統一。
+
 ## Verify Log
 - `node --check game/config.js && node --check game/state.js && node --check game/engine.js && node --check game/ui.js` : 成功
 - スクリーンショット取得を browser tool + Playwright で試行したが、`run_playwright_script` がタイムアウトし取得不可
+- `node --check game/config.js && node --check game/state.js && node --check game/ui.js && node --check game/engine.js` : 成功
+- `python -m http.server 4173 --directory /workspace/AI_made_it` + Playwright(設定タブ遷移) : 成功（スクリーンショット取得）
