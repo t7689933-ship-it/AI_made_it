@@ -377,3 +377,19 @@
 ## Verify Log (2026-03-08 プレイタブのCelestial層削除 / Prestige表示順変更)
 - `node --check game/config.js && node --check game/state.js && node --check game/engine.js && node --check game/ui.js` : 成功
 - `python -m http.server 4173 --bind 0.0.0.0 --directory /workspace/AI_made_it` + Playwright: プレイタブで Celestial層が非表示であること、および「プレステージ」が「プレステージ層」より上に表示されることを確認（スクリーンショット取得）
+
+## Plan (2026-03-08 Celestialタブ描画回帰修正)
+- [x] Celestial層描画処理の回帰原因を特定
+- [x] Playタブ側DOM不在時でもCelestialタブ描画が継続するよう修正
+- [x] バージョン表記とアップデート情報を更新
+- [x] 検証ログ記録
+
+## Progress Log (2026-03-08 Celestialタブ描画回帰修正)
+- 着手: `game/ui.js` の `renderCelestialLayers()` を確認し、`#celestialLayerList` 不在時に早期returnして `#celestialLayerListTab` まで更新が到達しないことを確認。
+- `game/ui.js`: Playタブ側要素がなくても Celestialタブ側要素があれば描画を継続するように条件分岐を修正。空データ時メッセージも両コンテナへ反映するよう統一。
+- `game/config.js`: APP_VERSION を `Ver.1.15.3` に更新。
+- `index.html`: アップデート情報に Ver.1.15.3 の不具合修正内容を追記。
+
+## Verify Log (2026-03-08 Celestialタブ描画回帰修正)
+- `node --check game/config.js && node --check game/state.js && node --check game/engine.js && node --check game/ui.js` : 成功
+- `python -m http.server 4173 --bind 0.0.0.0 --directory /workspace/AI_made_it` + Playwright: Celestialタブを開いた状態で `#celestialLayerListTab` の項目が空でないこと（items=4）を確認し、スクリーンショットを取得（artifact: browser:/tmp/codex_browser_invocations/9dc517d7b55c2ad7/artifacts/artifacts/ver_1_15_3_celestial_tab.png）

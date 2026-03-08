@@ -603,12 +603,17 @@
 
   function renderCelestialLayers(){
     const wrap = document.getElementById('celestialLayerList');
-    if (!wrap) return;
-    const list = E.getCelestialLayerStatus ? E.getCelestialLayerStatus() : [];
-    if (!list.length){ wrap.innerHTML = '<div class="muted small">Celestial層データがありません</div>'; return; }
-    const html = list.map(l=>`<div class="achItem ${l.unlocked ? 'achUnlocked':'achLocked'}"><div><strong>${l.name}</strong><div class="muted small">必要累計AP: ${fmtNumber(l.need)} / ${l.desc||''}</div><div class="muted tiny">効果: ${formatBonusText(l.bonus)}</div></div><div class="muted small">${l.unlocked ? '解放':'未解放'}</div></div>`).join('');
-    wrap.innerHTML = html;
     const tabWrap = document.getElementById('celestialLayerListTab');
+    if (!wrap && !tabWrap) return;
+    const list = E.getCelestialLayerStatus ? E.getCelestialLayerStatus() : [];
+    if (!list.length){
+      const emptyHtml = '<div class="muted small">Celestial層データがありません</div>';
+      if (wrap) wrap.innerHTML = emptyHtml;
+      if (tabWrap) tabWrap.innerHTML = emptyHtml;
+      return;
+    }
+    const html = list.map(l=>`<div class="achItem ${l.unlocked ? 'achUnlocked':'achLocked'}"><div><strong>${l.name}</strong><div class="muted small">必要累計AP: ${fmtNumber(l.need)} / ${l.desc||''}</div><div class="muted tiny">効果: ${formatBonusText(l.bonus)}</div></div><div class="muted small">${l.unlocked ? '解放':'未解放'}</div></div>`).join('');
+    if (wrap) wrap.innerHTML = html;
     if (tabWrap) tabWrap.innerHTML = html;
   }
 
