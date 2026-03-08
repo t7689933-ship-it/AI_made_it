@@ -393,3 +393,20 @@
 ## Verify Log (2026-03-08 Celestialタブ描画回帰修正)
 - `node --check game/config.js && node --check game/state.js && node --check game/engine.js && node --check game/ui.js` : 成功
 - `python -m http.server 4173 --bind 0.0.0.0 --directory /workspace/AI_made_it` + Playwright: Celestialタブを開いた状態で `#celestialLayerListTab` の項目が空でないこと（items=4）を確認し、スクリーンショットを取得（artifact: browser:/tmp/codex_browser_invocations/9dc517d7b55c2ad7/artifacts/artifacts/ver_1_15_3_celestial_tab.png）
+
+## Plan (2026-03-08 UI無骨化)
+- [x] 既存UIスタイルと変更対象（共通CSS / ヘッダータブ / ステータス表示）を確認
+- [x] 無骨テイスト（配色・角丸・ボーダー・装飾）の最小差分スタイルを実装
+- [x] バージョン表記とアップデート情報を更新
+- [x] 検証ログ記録
+
+## Progress Log (2026-03-08 UI無骨化)
+- 着手: `game/styles.css` と `index.html` のUIスタイル定義を確認。
+- `game/styles.css`: ルートカラーをダークグレー基調へ変更し、カード/ボタン/入力/タブ/統計パネルの角丸・枠線・陰影をインダストリアル調へ統一。
+- `index.html`: ヘッダー内のタブボタンとステータスカードのインラインスタイルを無骨寄りへ調整。
+- `game/config.js`: APP_VERSION を `Ver.1.16.0` に更新。
+- `index.html`: アップデート情報に Ver.1.16.0 のUI刷新内容を追記。
+
+## Verify Log (2026-03-08 UI無骨化)
+- `node --check game/config.js && node --check game/state.js && node --check game/engine.js && node --check game/ui.js` : 成功
+- `python -m http.server 4173 --bind 0.0.0.0 --directory /workspace/AI_made_it` + Playwright: トップ画面の無骨化デザイン反映を確認し、スクリーンショット取得（artifact: browser:/tmp/codex_browser_invocations/30924de90f28e4f6/artifacts/artifacts/ver_1_16_0_rugged_ui.png）
