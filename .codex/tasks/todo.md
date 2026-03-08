@@ -359,3 +359,37 @@
 ## Verify Log (2026-03-08 重要経路バグ修正: 外部state集計キャッシュ)
 - `node --check game/config.js && node --check game/state.js && node --check game/engine.js && node --check game/ui.js` : 成功
 - `node - <<'NODE' ... (E.getAggregates(st1) と E.getAggregates(st2) の startingGoldBonus が独立に計算されることを検証) ... NODE` : 成功
+
+## Plan (2026-03-08 プレイタブのCelestial層削除 / Prestige表示順変更)
+- [x] プレイタブの対象DOM（Prestige・Prestige層・Celestial層）を確認
+- [x] プレイタブからCelestial層カードを削除
+- [x] プレイタブ内の「プレステージ」と「プレステージ層」の上下順を入れ替え
+- [x] バージョン表記とアップデート情報を更新
+- [x] 検証ログ記録
+
+## Progress Log (2026-03-08 プレイタブのCelestial層削除 / Prestige表示順変更)
+- 着手: index.html のプレイタブ構成を確認し、`プレステージ層` → `Celestial層` → `プレステージ` の順で配置されていることを確認。
+- index.html: プレイタブ内の Celestial層カード（`#celestialLayerList`）を削除。
+- index.html: プレイタブ内カード順を `プレステージ` → `プレステージ層` へ変更。
+- config.js: APP_VERSION を `Ver.1.15.2` に更新。
+- index.html: アップデート情報に Ver.1.15.2 の変更内容を追記。
+
+## Verify Log (2026-03-08 プレイタブのCelestial層削除 / Prestige表示順変更)
+- `node --check game/config.js && node --check game/state.js && node --check game/engine.js && node --check game/ui.js` : 成功
+- `python -m http.server 4173 --bind 0.0.0.0 --directory /workspace/AI_made_it` + Playwright: プレイタブで Celestial層が非表示であること、および「プレステージ」が「プレステージ層」より上に表示されることを確認（スクリーンショット取得）
+
+## Plan (2026-03-08 Celestialタブ描画回帰修正)
+- [x] Celestial層描画処理の回帰原因を特定
+- [x] Playタブ側DOM不在時でもCelestialタブ描画が継続するよう修正
+- [x] バージョン表記とアップデート情報を更新
+- [x] 検証ログ記録
+
+## Progress Log (2026-03-08 Celestialタブ描画回帰修正)
+- 着手: `game/ui.js` の `renderCelestialLayers()` を確認し、`#celestialLayerList` 不在時に早期returnして `#celestialLayerListTab` まで更新が到達しないことを確認。
+- `game/ui.js`: Playタブ側要素がなくても Celestialタブ側要素があれば描画を継続するように条件分岐を修正。空データ時メッセージも両コンテナへ反映するよう統一。
+- `game/config.js`: APP_VERSION を `Ver.1.15.3` に更新。
+- `index.html`: アップデート情報に Ver.1.15.3 の不具合修正内容を追記。
+
+## Verify Log (2026-03-08 Celestialタブ描画回帰修正)
+- `node --check game/config.js && node --check game/state.js && node --check game/engine.js && node --check game/ui.js` : 成功
+- `python -m http.server 4173 --bind 0.0.0.0 --directory /workspace/AI_made_it` + Playwright: Celestialタブを開いた状態で `#celestialLayerListTab` の項目が空でないこと（items=4）を確認し、スクリーンショットを取得（artifact: browser:/tmp/codex_browser_invocations/9dc517d7b55c2ad7/artifacts/artifacts/ver_1_15_3_celestial_tab.png）
