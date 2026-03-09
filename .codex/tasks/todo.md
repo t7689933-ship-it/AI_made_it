@@ -514,3 +514,22 @@
 - `node --check game/config.js && node --check game/state.js && node --check game/engine.js && node --check game/ui.js` : 成功
 - `node - <<'NODE' ... (showUpdateModalIfNeeded の1行目が `${C.APP_VERSION} の主な更新` であり、`Ver Ver.` が含まれないことを検証) ... NODE` : 成功
 - `python -m http.server 4173 --bind 0.0.0.0 --directory /workspace/AI_made_it` + Playwright: アップデートモーダル表示のスクリーンショット取得（artifact: browser:/tmp/codex_browser_invocations/2a7ab54a3260e42b/artifacts/artifacts/update_modal_ver_1_17_1.png）
+
+
+## Plan (2026-03-09 重要経路バグ修正: 後半タブ未表示)
+- [x] タブ未表示の再現条件を確認し、DOM構造の崩れ有無を特定
+- [x] 最小差分でDOM構造を修正し、表示不能タブ群の復帰を実装
+- [x] バージョン表記・アップデート情報・モーダル文言を更新
+- [x] 検証ログ記録
+
+
+## Progress Log (2026-03-09 重要経路バグ修正: 後半タブ未表示)
+- 着手: `index.html` を確認し、`#tab-ascension` の閉じタグ不足により `#tab-challenges` 以降が Ascension 配下へネストされる構造崩れを確認。
+- `index.html`: `#tab-ascension` の閉じタグを1つ追加し、Challenge / 実績 / 統計 / 設定・セーブ / ヘルプ / アップデート情報タブをトップレベルの `.tabPane` に復帰。
+- `game/config.js`: アプリバージョンを `Ver.1.17.2` へ更新。
+- `index.html` / `game/ui.js`: 今回修正内容をアップデート情報と初回表示モーダル文言へ反映。
+
+## Verify Log (2026-03-09 重要経路バグ修正: 後半タブ未表示)
+- `node --check game/config.js && node --check game/state.js && node --check game/engine.js && node --check game/ui.js` : 成功
+- `python - <<'PY' ... (index.html内で #tab-ascension の閉じが #tab-challenges より前にあること、更新文言/バージョン更新を検証) ... PY` : 成功
+- `python -m http.server 4173 --bind 0.0.0.0 --directory /workspace/AI_made_it` + Playwright(Chromium/Firefox): ブラウザ環境のクラッシュ/接続リセット（SIGSEGV, NS_ERROR_NET_RESET）でスクリーンショット取得不可
