@@ -314,8 +314,9 @@
 
         const sub = document.createElementNS('http://www.w3.org/2000/svg','text');
         sub.setAttribute('x', def.x - 80); sub.setAttribute('y', def.y + 12); sub.setAttribute('fill','#9fb0c9'); sub.setAttribute('font-size','12px');
-        const nextCost = E.legacyCostForNextLevel(def, E.getState().legacyNodes[def.id] || 0);
-        sub.textContent = `Lv:${fmtNumber(lvl)}/${def.maxLevel}  次:${isFinite(nextCost)?fmtNumber(nextCost):'—'}`; svg.appendChild(sub);
+        const nextCost = E.legacyCostForNextLevel(def, E.getState().legacyNodes[def.id] || 0, E.getState());
+        const maxLabel = hasAscSpecial('unlockLegacyLevelCap') ? '∞' : def.maxLevel;
+        sub.textContent = `Lv:${fmtNumber(lvl)}/${maxLabel}  次:${isFinite(nextCost)?fmtNumber(nextCost):'—'}`; svg.appendChild(sub);
 
         const handler = ()=>{ rect.classList.remove('pulse'); void rect.offsetWidth; rect.classList.add('pulse'); selectLegacyNode(def.id); };
         rect.addEventListener('click', handler); title.addEventListener('click', handler); sub.addEventListener('click', handler);
@@ -370,18 +371,18 @@
     document.getElementById('ins_name').textContent = def.name;
     document.getElementById('ins_desc').textContent = def.desc || '';
     document.getElementById('ins_lvl').textContent = fmtNumber(lvl);
-    document.getElementById('ins_max').textContent = def.maxLevel || '—';
+    document.getElementById('ins_max').textContent = hasAscSpecial('unlockLegacyLevelCap') ? '∞' : (def.maxLevel || '—');
 
     if (def.prereq && def.prereq.length){
       const names = def.prereq.map(p=>{ const nm = (C.LEGACY_DEFS.find(x=>x.id===p.id)||{}).name || p.id; return `${nm} (Lv${p.minLevel||1})`; });
       document.getElementById('ins_prereq').textContent = names.join('、');
     } else document.getElementById('ins_prereq').textContent = 'なし';
 
-    const nextCost = E.legacyCostForNextLevel(def, E.getState().legacyNodes[id] || 0);
+    const nextCost = E.legacyCostForNextLevel(def, E.getState().legacyNodes[id] || 0, E.getState());
     document.getElementById('ins_next_cost').textContent = isFinite(nextCost) ? fmtNumber(nextCost) : '—';
 
     const currEff = computeLegacyEffectForLevel(def, lvl);
-    const nextEff = computeLegacyEffectForLevel(def, Math.min(def.maxLevel, lvl+1));
+    const nextEff = computeLegacyEffectForLevel(def, lvl+1);
     document.getElementById('ins_next_effect').textContent = `${currEff.text} → ${nextEff.text}`;
 
     for (const k in svgNodeEls) if (svgNodeEls[k]) svgNodeEls[k].classList.remove('selected');
@@ -493,25 +494,28 @@
   function syncAutoBuyControls(){
     const st = E.getState();
     st.settings = st.settings || {};
-    st.settings.autoBuy = Object.assign({ enabled:false, units:true, upgrades:true, intervalMs:500, purchaseMode:'single' }, st.settings.autoBuy || {});
+    st.settings.autoBuy = Object.assign({ enabled:false, units:true, upgrades:true, legacy:false, intervalMs:500, purchaseMode:'single' }, st.settings.autoBuy || {});
     const unlocked = hasAscSpecial('unlockAutobuy');
     const enableEl = document.getElementById('autoBuyEnable');
     const unitsEl = document.getElementById('autoBuyUnits');
     const upgradesEl = document.getElementById('autoBuyUpgrades');
+    const legacyEl = document.getElementById('autoBuyLegacy');
     const modeEl = document.getElementById('autoBuyMode');
     const intervalEl = document.getElementById('autoBuyInterval');
     const statusEl = document.getElementById('autoBuyStatus');
-    if (!enableEl || !unitsEl || !upgradesEl || !modeEl || !intervalEl || !statusEl) return;
+    if (!enableEl || !unitsEl || !upgradesEl || !legacyEl || !modeEl || !intervalEl || !statusEl) return;
 
     enableEl.disabled = !unlocked;
     unitsEl.disabled = !unlocked;
     upgradesEl.disabled = !unlocked;
+    legacyEl.disabled = !unlocked;
     modeEl.disabled = !unlocked;
     intervalEl.disabled = !unlocked;
 
     enableEl.checked = unlocked ? !!st.settings.autoBuy.enabled : false;
     unitsEl.checked = !!st.settings.autoBuy.units;
     upgradesEl.checked = !!st.settings.autoBuy.upgrades;
+    legacyEl.checked = !!st.settings.autoBuy.legacy;
     modeEl.value = st.settings.autoBuy.purchaseMode === 'max' ? 'max' : 'single';
     intervalEl.value = String(Math.max(50, Number(st.settings.autoBuy.intervalMs || 500)));
     statusEl.textContent = unlocked ? '解放済み' : '未解放';
@@ -521,9 +525,10 @@
     const enableEl = document.getElementById('autoBuyEnable');
     const unitsEl = document.getElementById('autoBuyUnits');
     const upgradesEl = document.getElementById('autoBuyUpgrades');
+    const legacyEl = document.getElementById('autoBuyLegacy');
     const modeEl = document.getElementById('autoBuyMode');
     const intervalEl = document.getElementById('autoBuyInterval');
-    if (!enableEl || !unitsEl || !upgradesEl || !modeEl || !intervalEl) return;
+    if (!enableEl || !unitsEl || !upgradesEl || !legacyEl || !modeEl || !intervalEl) return;
     const update = ()=>{
       const st = E.getState();
       st.settings = st.settings || {};
@@ -531,6 +536,7 @@
       st.settings.autoBuy.enabled = !!enableEl.checked;
       st.settings.autoBuy.units = !!unitsEl.checked;
       st.settings.autoBuy.upgrades = !!upgradesEl.checked;
+      st.settings.autoBuy.legacy = !!legacyEl.checked;
       st.settings.autoBuy.purchaseMode = modeEl.value === 'max' ? 'max' : 'single';
       st.settings.autoBuy.intervalMs = Math.max(50, Number(intervalEl.value || 500));
       SM.saveState(st);
@@ -538,6 +544,7 @@
     enableEl.addEventListener('change', update);
     unitsEl.addEventListener('change', update);
     upgradesEl.addEventListener('change', update);
+    legacyEl.addEventListener('change', update);
     modeEl.addEventListener('change', update);
     intervalEl.addEventListener('change', update);
   }
@@ -567,6 +574,12 @@
       if (cfg.units){
         for (const def of C.UNIT_DEFS){
           const res = buyMaxMode ? E.buyMaxUnitsInternal(def.id) : E.buyUnitInternal(def.id, 1);
+          if (res && res.ok) changed = true;
+        }
+      }
+      if (cfg.legacy){
+        for (const def of C.LEGACY_DEFS){
+          const res = E.attemptBuyLegacyInternal(def.id, buyMaxMode ? Infinity : 1);
           if (res && res.ok) changed = true;
         }
       }
@@ -983,8 +996,8 @@
     const body = document.getElementById('updateModalBody');
     if (!modal || !body) return;
     body.textContent = `${C.APP_VERSION} の主な更新
-- Ascension内のCelestialサブタブが表示されない不具合を修正
-- Ascension説明文の重複を整理し、UI表示を簡潔化`;
+- Ascensionショップに「遺産限界突破理論」を追加（高コスト）し、レガシーツリーのレベル上限を解放
+- 自動購入の対象にレガシーツリーを追加`;
     modal.style.display = 'flex';
     document.getElementById('closeUpdateModal')?.addEventListener('click', ()=>{
       modal.style.display = 'none';

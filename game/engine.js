@@ -229,7 +229,25 @@
     return Math.max(1, Math.floor(cost));
   }
   function upgradeCostNextLevel(def, currentLevel){ return Math.floor(def.baseCost * Math.pow(def.costMult, currentLevel)); }
-  function legacyCostForNextLevel(def, currentLevel){ if (currentLevel >= def.maxLevel) return Infinity; return Math.floor(def.baseCost * Math.pow(def.costMult, currentLevel)); }
+  function hasAscSpecialInState(st, kind){
+    for (const def of (C.ASC_UPGRADES||[])){
+      if (def.type !== 'special') continue;
+      if (!def.payload || def.payload.kind !== kind) continue;
+      if ((st.ascOwned[def.id] || 0) > 0) return true;
+    }
+    return false;
+  }
+
+  function legacyMaxLevel(def, st){
+    if (!def || typeof def.maxLevel !== 'number') return Infinity;
+    if (hasAscSpecialInState(st || state, 'unlockLegacyLevelCap')) return Infinity;
+    return def.maxLevel;
+  }
+
+  function legacyCostForNextLevel(def, currentLevel, st){
+    if (currentLevel >= legacyMaxLevel(def, st || state)) return Infinity;
+    return Math.floor(def.baseCost * Math.pow(def.costMult, currentLevel));
+  }
 
   function computeBaseGPS(st){
     const agg = getAggregates(st);
@@ -406,21 +424,21 @@
     const def = (C.LEGACY_DEFS||[]).find(d=>d.id===legacyId);
     if (!def) return false;
     const lvl = st.legacyNodes[legacyId] || 0;
-    if (lvl >= def.maxLevel) return false;
+    if (lvl >= legacyMaxLevel(def, st)) return false;
     if (def.prereq && def.prereq.length){
       for (const p of def.prereq){
         const have = st.legacyNodes[p.id] || 0;
         if (have < (p.minLevel || 1)) return false;
       }
     }
-    return st.legacy >= legacyCostForNextLevel(def, lvl);
+    return st.legacy >= legacyCostForNextLevel(def, lvl, st);
   }
 
   function attemptBuyLegacyInternal(legacyId, maxCount = 1){
     const def = (C.LEGACY_DEFS||[]).find(d=>d.id===legacyId);
     if (!def) return { ok:false, reason:'no_def' };
     let lvl = state.legacyNodes[legacyId] || 0;
-    if (lvl >= def.maxLevel) return { ok:false, reason:'max' };
+    if (lvl >= legacyMaxLevel(def, state)) return { ok:false, reason:'max' };
 
     if (def.prereq && def.prereq.length){
       for (const p of def.prereq){
@@ -430,7 +448,7 @@
     }
 
     if (maxCount === 1){
-      const cost = legacyCostForNextLevel(def, lvl);
+      const cost = legacyCostForNextLevel(def, lvl, state);
       if (state.legacy < cost) return { ok:false, reason:'cost' };
       state.legacy -= cost;
       state.legacyNodes[legacyId] = lvl + 1;
@@ -439,16 +457,36 @@
     }
 
     // buy max
-    let possible = 0, totalCost = 0, tmp = lvl;
-    while (tmp < def.maxLevel){
-      const c = legacyCostForNextLevel(def, tmp);
-      if (state.legacy >= totalCost + c){ totalCost += c; tmp++; possible++; } else break;
+    const maxLevel = legacyMaxLevel(def, state);
+    const remainingByCap = Number.isFinite(maxLevel) ? Math.max(0, maxLevel - lvl) : Infinity;
+    const baseCost = legacyCostForNextLevel(def, lvl, state);
+    if (!Number.isFinite(baseCost) || baseCost <= 0) return { ok:false, reason:'cost' };
+
+    let possible = 0;
+    let totalCost = 0;
+    if (def.costMult === 1){
+      possible = Math.floor(state.legacy / baseCost);
+      if (Number.isFinite(remainingByCap)) possible = Math.min(possible, remainingByCap);
+      totalCost = possible * baseCost;
+    } else {
+      const maxBuyChecks = Number.isFinite(remainingByCap) ? remainingByCap : 4096;
+      let tmp = lvl;
+      for (let i = 0; i < maxBuyChecks; i++){
+        const c = legacyCostForNextLevel(def, tmp, state);
+        if (!Number.isFinite(c) || c <= 0) break;
+        if (state.legacy >= totalCost + c){
+          totalCost += c;
+          tmp++;
+          possible++;
+        } else {
+          break;
+        }
+      }
     }
+
     if (possible <= 0) return { ok:false, reason:'cost' };
-    for (let i=0;i<possible;i++){
-      const c = legacyCostForNextLevel(def, state.legacyNodes[legacyId] || 0);
-      state.legacy -= c; state.legacyNodes[legacyId] = (state.legacyNodes[legacyId] || 0) + 1;
-    }
+    state.legacy -= totalCost;
+    state.legacyNodes[legacyId] = lvl + possible;
     invalidateAggCache(); recalcAndCacheGPS(state);
     return { ok:true, bought:possible, cost: totalCost };
   }

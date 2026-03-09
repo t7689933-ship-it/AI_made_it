@@ -34,7 +34,7 @@
       confirmLegacyBuy:true,
       confirmLegacyBuyMax:true,
       toast:{ achievement:true, offline:true, purchase:true, general:true },
-      autoBuy:{ enabled:false, units:true, upgrades:true, intervalMs:500, purchaseMode:'single' }
+      autoBuy:{ enabled:false, units:true, upgrades:true, legacy:false, intervalMs:500, purchaseMode:'single' }
     },
     achievementsOwned: {},
     achievementsProgress: {},
