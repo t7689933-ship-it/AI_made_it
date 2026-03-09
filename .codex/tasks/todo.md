@@ -551,3 +551,22 @@
 - `node --check game/config.js && node --check game/state.js && node --check game/engine.js && node --check game/ui.js` : 成功
 - `python - <<'PY' ... (index.htmlで core サブタブ閉じタグの追加、Ver.1.17.3反映を検証) ... PY` : 成功
 - `python -m http.server 4173 --bind 0.0.0.0 --directory /workspace/AI_made_it` + Playwright: Ascension → Celestialサブタブ表示を確認し、スクリーンショット取得（artifact: `browser:/tmp/codex_browser_invocations/73f037dd4632031f/artifacts/artifacts/celestial_subtab_fix.png`）
+
+## Plan (2026-03-09 レガシー上限解放アップグレード + レガシー自動購入)
+- [x] レガシーツリー上限判定と自動購入実装箇所の調査
+- [x] 高コストの上限解放アップグレードをAscensionショップへ追加
+- [x] 上限解放時にレガシーノードの最大レベル判定を無限化
+- [x] 自動購入にレガシー対象トグルと実行処理を追加
+- [x] バージョン表記・アップデート情報・更新モーダルを今回内容へ更新
+- [x] 検証ログ記録
+
+## Progress Log (2026-03-09 レガシー上限解放アップグレード + レガシー自動購入)
+- 着手: `game/config.js` / `game/engine.js` / `game/ui.js` / `game/state.js` / `index.html` のレガシー上限・自動購入・更新情報関連を確認。
+- `game/config.js`: `Ver.1.18.0` へ更新。Ascensionショップに高コスト特殊強化 `asc_unlock_legacy_cap`（`unlockLegacyLevelCap`, cost:15000）を追加。
+- `game/engine.js`: `unlockLegacyLevelCap` 所持時は `legacyMaxLevel` を `Infinity` として扱う実装を追加し、レガシー購入判定/コスト判定へ適用。
+- `game/ui.js` / `index.html`: 自動購入対象に「レガシー」を追加し、購入ループで `attemptBuyLegacyInternal` を実行するよう拡張。レガシーInspector/SVGの最大レベル表示を上限解放時 `∞` 表記に対応。
+- `index.html` / `game/ui.js`: アップデート情報と初回表示モーダルを今回変更内容のみに更新。
+
+## Verify Log (2026-03-09 レガシー上限解放アップグレード + レガシー自動購入)
+- `node --check game/config.js && node --check game/state.js && node --check game/engine.js && node --check game/ui.js` : 成功
+- `python - <<'PY' ... (asc_unlock_legacy_cap追加 / autoBuyLegacy要素 / Ver.1.18.0更新 / モーダル文言更新を検証) ... PY` : 成功
