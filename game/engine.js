@@ -581,7 +581,8 @@
     if (!def) return { ok:false, reason:'not_found' };
     state.celestialOwned = state.celestialOwned || {};
     const lvl = state.celestialOwned[def.id] || 0;
-    if (lvl >= ascUpgradeMaxLevel(def, state)) return { ok:false, reason:'max' };
+    const maxLevel = (typeof def.maxLevel === 'number') ? def.maxLevel : Infinity;
+    if (lvl >= maxLevel) return { ok:false, reason:'max' };
     const cost = def.cost || 0;
     if ((state.celestialPoints || 0) < cost) return { ok:false, reason:'cp' };
     state.celestialPoints -= cost;

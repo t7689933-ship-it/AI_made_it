@@ -650,3 +650,17 @@
 - ✅ `node --check game/config.js && node --check game/state.js && node --check game/engine.js && node --check game/ui.js`
 - ✅ `node - <<'NODE' ... NODE`（Challenge累計Gold復元とAscension Shop上限拡張のロジック検証）
 - ✅ `python -m http.server 4173` + Playwright（ChallengeタブのUIスクリーンショット取得）
+
+## Plan (2026-03-10 Codex review対応: Celestial上限判定バグ修正)
+- [x] `buyCelestialUpgradeInternal` の上限判定が Ascension拡張ボーナスを誤適用していないか調査
+- [x] Celestialアップグレード購入上限を静的 `maxLevel` 基準へ修正
+- [x] 再現テスト（API直接呼び出し）と構文チェック実行
+- [x] 検証ログ追記
+
+## Progress Log (2026-03-10 Codex review対応: Celestial上限判定バグ修正)
+- 着手: `game/engine.js` の `buyCelestialUpgradeInternal` が `ascUpgradeMaxLevel` を参照していることを確認。`ascShopCapBoost` がCelestial自身にも適用され、`cel_asc_expand` の購入上限が実質無限化する経路を特定。
+- 修正: `buyCelestialUpgradeInternal` の上限判定を `def.maxLevel`（静的上限）で評価するよう変更。Ascension上限拡張ボーナスの誤適用を除去。
+
+## Verify Log (2026-03-10 Codex review対応: Celestial上限判定バグ修正)
+- ✅ `node --check game/engine.js && node --check game/config.js && node --check game/state.js && node --check game/ui.js`
+- ✅ `node - <<'NODE' ... NODE`（VM上で `cel_asc_expand` を連続購入し、5回で `reason:'max'` になること、および `getAscUpgradeMaxLevel` がAscension側には +5 を反映することを検証）
