@@ -664,3 +664,24 @@
 ## Verify Log (2026-03-10 Codex review対応: Celestial上限判定バグ修正)
 - ✅ `node --check game/engine.js && node --check game/config.js && node --check game/state.js && node --check game/ui.js`
 - ✅ `node - <<'NODE' ... NODE`（VM上で `cel_asc_expand` を連続購入し、5回で `reason:'max'` になること、および `getAscUpgradeMaxLevel` がAscension側には +5 を反映することを検証）
+
+## Plan (2026-03-10 インポート/リセットの即時保存バグ修正)
+- [ ] セーブ導線（インポート/リセット）の再現確認
+- [ ] 原因箇所を最小修正（即時 saveState）
+- [ ] 検証コマンド実行とログ追記
+
+## Progress Log (2026-03-10 インポート/リセットの即時保存バグ修正)
+- 着手: `game/ui.js` の Save/Load イベント処理を確認。インポート/リセット後に `SM.saveState` が呼ばれておらず、オートセーブ前リロードで変更喪失の可能性を確認。
+- 修正: `game/ui.js` の「貼り付けインポート」「ファイルインポート」「全リセット」直後に `SM.saveState(E.getState())` を追加し、即時永続化するよう変更。
+
+## Verify Log (2026-03-10 インポート/リセットの即時保存バグ修正)
+- ✅ `node --check game/ui.js`
+- ✅ `python3 -m http.server 4173` + Playwright（設定タブで貼り付けインポート後に即リロードし、`in_memory/storage/after_reload = 123456/123456/123456` を確認）
+- ⚠️ `python3 -m http.server 4173` + Playwright（追加のリセット検証を試行したが、ブラウザ起動時に Chromium SIGSEGV で失敗）
+
+## Plan 完了状況 (2026-03-10 インポート/リセットの即時保存バグ修正)
+- [x] セーブ導線（インポート/リセット）の再現確認
+- [x] 原因箇所を最小修正（即時 saveState）
+- [x] 検証コマンド実行とログ追記
+- 追記対応: バージョンを `Ver.1.19.1` へ更新し、アップデート情報タブと更新モーダルを今回修正内容に合わせて更新。
+- 追加検証: Playwright再試行時に Chromium SIGSEGV が発生したため、成功済みの再現検証（インポート後リロード保持）と構文チェック結果を採用。
