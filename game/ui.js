@@ -94,7 +94,7 @@
     st = st || E.getState();
     for (const def of C.ASC_UPGRADES){
       const current = st.ascOwned[def.id] || 0;
-      const required = def.maxLevel || 1;
+      const required = E.getAscUpgradeMaxLevel ? E.getAscUpgradeMaxLevel(def, st) : (def.maxLevel || 1);
       if (current < required) return false;
     }
     return true;
@@ -262,7 +262,7 @@
       div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0">
         <div><strong>${a.name}</strong><div class="muted small">${a.desc||''}</div></div>
         <div style="text-align:right">
-          <div class="muted small">Lv:<span id="ascLvl-${a.id}">${fmtNumber(lvl)}</span>${a.maxLevel?'/'+a.maxLevel:''}</div>
+          <div class="muted small">Lv:<span id="ascLvl-${a.id}">${fmtNumber(lvl)}</span>/<span id="ascMax-${a.id}">${fmtNumber(E.getAscUpgradeMaxLevel ? E.getAscUpgradeMaxLevel(a, E.getState()) : (a.maxLevel || 1))}</span></div>
           <div style="margin-top:6px"><button id="ascBuy-${a.id}">Buy (${fmtNumber(a.cost)})</button></div>
         </div></div>`;
       el.appendChild(div);
@@ -662,7 +662,7 @@
     for (const ch of (C.CHALLENGES || [])){
       const row = document.createElement('div');
       row.className = 'upgradeRow';
-      row.innerHTML = `<div><strong>${ch.name}</strong><div class="muted small">${ch.desc}</div><div class="muted tiny">目標: 累計Gold ${fmtNumber(ch.goalTotalGold || 0)} / 報酬: ${(ch.reward && ch.reward.text) || '恒久ボーナス'}</div></div><div class="row"><button id="chStart-${ch.id}" class="small accent">開始</button><button id="chClaim-${ch.id}" class="small">達成判定</button><span id="chDone-${ch.id}" class="muted small">未クリア</span></div>`;
+      row.innerHTML = `<div><strong>${ch.name}</strong><div class="muted small">${ch.desc}</div><div class="muted tiny">目標: 累計Gold ${fmtNumber(ch.goalTotalGold || 0)} / 報酬: ${(ch.reward && ch.reward.text) || '恒久ボーナス'}</div></div><div class="row"><button id="chStart-${ch.id}" class="small accent">開始</button><button id="chClaim-${ch.id}" class="small">達成判定</button><button id="chAbandon-${ch.id}" class="small warn">中断</button><span id="chDone-${ch.id}" class="muted small">未クリア</span></div>`;
       wrap.appendChild(row);
     }
     built.challenges = true;
@@ -677,7 +677,8 @@
       if (active) status.textContent = `挑戦中: ${active.name}
 進捗: ${fmtNumber(st.totalGoldEarned || 0)} / ${fmtNumber(active.goalTotalGold || 0)}
 アップグレード制限: ${active.effects && active.effects.disableUpgrades ? 'あり' : 'なし'}
-ユニット単一路線: ${active.effects && active.effects.singleUnitOnly ? 'あり' : 'なし'}`;
+ユニット単一路線: ${active.effects && active.effects.singleUnitOnly ? 'あり' : 'なし'}
+累計Gold復元待機: ${fmtNumber(st.challenge.savedTotalGold || 0)}`;
       else status.textContent = `待機中
 クリア数: ${fmtNumber(Object.keys(st.challenge.completed || {}).filter(k=>st.challenge.completed[k]).length)} / ${fmtNumber((C.CHALLENGES || []).length)}`;
     }
@@ -689,8 +690,10 @@
       if (doneEl) doneEl.textContent = done ? `クリア済み${hasBestSec ? ` (${fmtNumber(bestSec)}秒)` : ''}` : '未クリア';
       const startBtn = document.getElementById(`chStart-${ch.id}`);
       const claimBtn = document.getElementById(`chClaim-${ch.id}`);
-      if (startBtn) startBtn.disabled = !!(st.challenge.activeId && st.challenge.activeId !== ch.id);
+      const abandonBtn = document.getElementById(`chAbandon-${ch.id}`);
+      if (startBtn) startBtn.disabled = !!st.challenge.activeId;
       if (claimBtn) claimBtn.disabled = !(st.challenge.activeId === ch.id);
+      if (abandonBtn) abandonBtn.disabled = !(st.challenge.activeId === ch.id);
     }
   }
 
@@ -728,7 +731,16 @@
       if (upgradeButtons[d.id]) upgradeButtons[d.id].nextCost = nxt;
     }
 
-    for (const a of C.ASC_UPGRADES){ const l = document.getElementById(`ascLvl-${a.id}`); if (l) l.textContent = fmtNumber(st.ascOwned[a.id] || 0); }
+    for (const a of C.ASC_UPGRADES){
+      const l = document.getElementById(`ascLvl-${a.id}`);
+      const m = document.getElementById(`ascMax-${a.id}`);
+      const buyBtn = document.getElementById(`ascBuy-${a.id}`);
+      const curLv = st.ascOwned[a.id] || 0;
+      const maxLv = E.getAscUpgradeMaxLevel ? E.getAscUpgradeMaxLevel(a, st) : (a.maxLevel || 1);
+      if (l) l.textContent = fmtNumber(curLv);
+      if (m) m.textContent = fmtNumber(maxLv);
+      if (buyBtn) buyBtn.disabled = curLv >= maxLv || (st.ascPoints || 0) < (a.cost || 0);
+    }
 
     if (selectedLegacyId){
       const def = C.LEGACY_DEFS.find(x=>x.id===selectedLegacyId);
@@ -938,6 +950,11 @@
         if (res.ok){ SM.saveState(E.getState()); syncUIAfterChange(); checkAchievementsAfterAction(); showTypedToast('achievement', `${ch.name} クリア`); }
         else showTypedToast('general', '目標未達です');
       });
+      document.getElementById(`chAbandon-${ch.id}`)?.addEventListener('click', ()=>{
+        if (!confirm(`${ch.name} を中断します。チャレンジ中の累計Goldは破棄され、開始前の累計Goldに戻ります。`)) return;
+        const res = E.abandonChallengeInternal ? E.abandonChallengeInternal() : { ok:false };
+        if (res.ok){ SM.saveState(E.getState()); syncUIAfterChange(); showTypedToast('general', `${ch.name} を中断`); }
+      });
     }
 
     document.getElementById('ins_buy1')?.addEventListener('click', ()=>{
@@ -996,7 +1013,10 @@
     const body = document.getElementById('updateModalBody');
     if (!modal || !body) return;
     body.textContent = `${C.APP_VERSION} の主な更新
-- Ascensionショップの「遺産限界突破理論」を段階強化式に変更（購入ごとにレガシーツリー上限 +1）`;
+- Challengeに「中断」ボタンを追加（達成前でも終了可能）
+- Challenge終了時、累計Goldを挑戦開始前の値へ復元
+- 終盤ユニット向け超強化アップグレードを追加
+- CelestialアップグレードでAscension Shop上限を段階拡張可能に変更`;
     modal.style.display = 'flex';
     document.getElementById('closeUpdateModal')?.addEventListener('click', ()=>{
       modal.style.display = 'none';

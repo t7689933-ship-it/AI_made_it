@@ -5,7 +5,7 @@
   const C = {
     SAVE_KEY: 'inc.split.full.v4',
     SAVE_VERSION: 13,
-    APP_VERSION: 'Ver.1.18.1',
+    APP_VERSION: 'Ver.1.19.0',
     UI_UPDATE_INTERVAL_MS: 50,
     AUTO_SAVE_INTERVAL: 5000,
     MAX_OFFLINE_SECONDS: 60*60*24,
@@ -28,7 +28,9 @@
 
   C.UPGRADE_DEFS = [
     { id:'u_miner_eff', name:'採掘効率向上', desc:'採掘機: Lvごとに×1.15', baseCost:30,  costMult:1.9,  type:'unitMult',  payload:{unitId:'miner', multPerLevel:0.15}, maxLevel:null },
-    { id:'u_global_boost', name:'運営改善', desc:'全体: Lvごとに×1.08', baseCost:120, costMult:2.5,  type:'globalMult', payload:{multPerLevel:0.08},  maxLevel:null }
+    { id:'u_global_boost', name:'運営改善', desc:'全体: Lvごとに×1.08', baseCost:120, costMult:2.5,  type:'globalMult', payload:{multPerLevel:0.08},  maxLevel:null },
+    { id:'u_drillcore_overclock', name:'反応炉オーバークロック', desc:'ドリルコア反応炉: Lvごとに×1.85', baseCost:90000000, costMult:3.2, type:'unitMult', payload:{unitId:'drillcore', multPerLevel:0.85}, maxLevel:null },
+    { id:'u_voidrig_supercharger', name:'ヴォイド超過給', desc:'ヴォイド掘削艦: Lvごとに×2.20', baseCost:4500000000, costMult:3.6, type:'unitMult', payload:{unitId:'voidrig', multPerLevel:1.2}, maxLevel:null }
   ];
 
   C.LEGACY_DEFS = [
@@ -98,7 +100,8 @@
     { id:'cel_resonance_core', name:'共鳴核の再編', desc:'恒久: Prestige効果 +0.08', cost:8, type:'prestigeEffectAdd', payload:{ add:0.08 }, maxLevel:3 },
     { id:'cel_excav_pulse', name:'深層パルス', desc:'恒久: エクスカベーター ×2.5', cost:7, type:'unitMult', payload:{ unitId:'excav', mult:2.5 }, maxLevel:3 },
     { id:'cel_voidrig_flux', name:'虚空フラックス', desc:'恒久: ヴォイド掘削艦 ×4.0', cost:12, type:'unitMult', payload:{ unitId:'voidrig', mult:4.0 }, maxLevel:3 },
-    { id:'cel_event_horizon', name:'事象地平演算', desc:'恒久: 全体 ×2.5', cost:14, type:'globalMult', payload:{ mult:2.5 }, maxLevel:2 }
+    { id:'cel_event_horizon', name:'事象地平演算', desc:'恒久: 全体 ×2.5', cost:14, type:'globalMult', payload:{ mult:2.5 }, maxLevel:2 },
+    { id:'cel_asc_expand', name:'星界チューニング規格', desc:'Ascension Shopのレベル上限 +1 /Lv', cost:16, type:'ascShopCapBoost', payload:{ addMaxLevel:1 }, maxLevel:5 }
   ];
 
   C.CHALLENGES = [

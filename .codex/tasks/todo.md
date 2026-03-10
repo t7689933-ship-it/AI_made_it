@@ -631,3 +631,22 @@
 - `python - <<'PY' ... (index.html内に Ver.1.18.1 / Ver.1.18.0 / Ver.1.9.0 が共存することを検証) ... PY` : 成功
 - `node --check game/config.js && node --check game/engine.js && node --check game/ui.js && node --check game/state.js` : 成功
 - browser tool + Playwright でスクリーンショット取得を試行したが `ERR_EMPTY_RESPONSE` で取得不可
+
+## Plan (2026-03-10 Challenge改善 / 終盤UPG / Celestial上限拡張)
+- [x] 現状コード調査（Challenge状態遷移、累計ゴールド管理、アップグレード定義、更新情報）
+- [x] 要望4点の実装（離脱手段/累計ゴールド復元/終盤強化UPG/CelestialでAsc上限拡張）
+- [x] バージョン表記・アップデート情報・更新モーダル更新
+- [x] 検証コマンド実行とログ追記
+- [x] コミットとPR作成
+
+## Progress Log (2026-03-10 Challenge改善 / 終盤UPG / Celestial上限拡張)
+- 調査完了。Challenge離脱APIは存在するがUI導線なし。Challenge開始時に totalGoldEarned を 0 にするのみで終了時復元なし。
+- Challenge中断ボタン追加。Challenge開始前累計Goldの退避・達成/中断時復元を実装。
+- 終盤向けユニット強化アップグレード2種を追加。
+- Celestialアップグレード「星界チューニング規格」を追加し、Ascension Shop上限を段階拡張可能化。
+- バージョンを Ver.1.19.0 に更新し、アップデート情報タブ/更新モーダル文言を更新。
+
+## Verify Log (2026-03-10 Challenge改善 / 終盤UPG / Celestial上限拡張)
+- ✅ `node --check game/config.js && node --check game/state.js && node --check game/engine.js && node --check game/ui.js`
+- ✅ `node - <<'NODE' ... NODE`（Challenge累計Gold復元とAscension Shop上限拡張のロジック検証）
+- ✅ `python -m http.server 4173` + Playwright（ChallengeタブのUIスクリーンショット取得）
