@@ -59,7 +59,8 @@
       activeId: null,
       completed: {},
       bestSec: {},
-      ascendedInChallenge: 0
+      ascendedInChallenge: 0,
+      savedTotalGold: null
     },
     abyss: {
       shards: 0,
@@ -115,6 +116,7 @@
     merged.challenge.completed = Object.assign({}, merged.challenge.completed || {});
     merged.challenge.bestSec = Object.assign({}, merged.challenge.bestSec || {});
     if (typeof merged.challenge.ascendedInChallenge !== 'number') merged.challenge.ascendedInChallenge = 0;
+    if (typeof merged.challenge.savedTotalGold !== 'number' && merged.challenge.savedTotalGold !== null) merged.challenge.savedTotalGold = null;
     merged.abyss = Object.assign({}, deepCopy(defaultState.abyss), merged.abyss || {});
     if (typeof merged.seenUpdateVersion !== 'string') merged.seenUpdateVersion = merged.seenUpdateVersion || null;
     return merged;

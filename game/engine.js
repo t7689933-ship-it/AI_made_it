@@ -208,6 +208,23 @@
     return false;
   }
 
+  function ascCapBonusFromCelestial(st){
+    const src = st || state;
+    let bonus = 0;
+    for (const def of (C.CELESTIAL_UPGRADES || [])){
+      if (def.type !== 'ascShopCapBoost') continue;
+      const lv = (src.celestialOwned && src.celestialOwned[def.id]) ? src.celestialOwned[def.id] : 0;
+      if (lv <= 0) continue;
+      bonus += (def.payload && def.payload.addMaxLevel ? def.payload.addMaxLevel : 0) * lv;
+    }
+    return bonus;
+  }
+
+  function ascUpgradeMaxLevel(def, st){
+    if (!def || typeof def.maxLevel !== 'number') return Infinity;
+    return def.maxLevel + ascCapBonusFromCelestial(st || state);
+  }
+
   function getAggregates(st){
     st = st || state;
     // キャッシュは内部state専用。外部から渡された任意stateは毎回正しく再計算する。
@@ -506,7 +523,7 @@
     const def = (C.ASC_UPGRADES||[]).find(a=>a.id===id);
     if (!def) return { ok:false };
     const lvl = state.ascOwned[id] || 0;
-    if (def.maxLevel && lvl >= def.maxLevel) return { ok:false, reason:'max' };
+    if (lvl >= ascUpgradeMaxLevel(def, state)) return { ok:false, reason:'max' };
     if (state.ascPoints < def.cost) return { ok:false, reason:'cost' };
     state.ascPoints -= def.cost;
     state.ascOwned[id] = lvl + 1;
@@ -564,7 +581,8 @@
     if (!def) return { ok:false, reason:'not_found' };
     state.celestialOwned = state.celestialOwned || {};
     const lvl = state.celestialOwned[def.id] || 0;
-    if (def.maxLevel && lvl >= def.maxLevel) return { ok:false, reason:'max' };
+    const maxLevel = (typeof def.maxLevel === 'number') ? def.maxLevel : Infinity;
+    if (lvl >= maxLevel) return { ok:false, reason:'max' };
     const cost = def.cost || 0;
     if ((state.celestialPoints || 0) < cost) return { ok:false, reason:'cp' };
     state.celestialPoints -= cost;
@@ -603,7 +621,7 @@
     state.celestialPoints = 0;
     state.celestialEarnedTotal = 0;
     state.celestialOwned = (C.CELESTIAL_UPGRADES || []).reduce((a,u)=>(a[u.id]=0,a),{});
-    state.challenge = { activeId:null, completed:{}, bestSec:{}, ascendedInChallenge:0 };
+    state.challenge = { activeId:null, completed:{}, bestSec:{}, ascendedInChallenge:0, savedTotalGold:null };
     state.runStats = state.runStats || {};
     const now = nowSec();
     state.runStats.currentRunStartedAt = now;
@@ -650,7 +668,7 @@
       endedAt: now
     };
     state.lastAscensionRun = runSummary;
-    state.challenge = state.challenge || { activeId:null, completed:{}, bestSec:{}, ascendedInChallenge:0 };
+    state.challenge = state.challenge || { activeId:null, completed:{}, bestSec:{}, ascendedInChallenge:0, savedTotalGold:null };
     if (state.challenge.activeId) state.challenge.ascendedInChallenge = (state.challenge.ascendedInChallenge || 0) + 1;
     state.runStats.history.push(runSummary);
     if (state.runStats.history.length > 30) state.runStats.history = state.runStats.history.slice(-30);
@@ -672,7 +690,9 @@
   function startChallengeInternal(id){
     const ch = (C.CHALLENGES || []).find(x=>x.id===id);
     if (!ch) return { ok:false, reason:'not_found' };
-    state.challenge = state.challenge || { activeId:null, completed:{}, bestSec:{}, ascendedInChallenge:0 };
+    state.challenge = state.challenge || { activeId:null, completed:{}, bestSec:{}, ascendedInChallenge:0, savedTotalGold:null };
+    if (state.challenge.activeId) return { ok:false, reason:'already_active' };
+    state.challenge.savedTotalGold = state.totalGoldEarned || 0;
     state.challenge.activeId = id;
     state.units = (C.UNIT_DEFS || []).reduce((a,u)=>(a[u.id]=0,a),{});
     state.upgrades = (C.UPGRADE_DEFS || []).reduce((a,u)=>(a[u.id]=0,a),{});
@@ -692,8 +712,11 @@
   }
 
   function abandonChallengeInternal(){
-    state.challenge = state.challenge || { activeId:null, completed:{}, bestSec:{}, ascendedInChallenge:0 };
+    state.challenge = state.challenge || { activeId:null, completed:{}, bestSec:{}, ascendedInChallenge:0, savedTotalGold:null };
+    const restoredTotalGold = state.challenge.savedTotalGold;
     state.challenge.activeId = null;
+    if (typeof restoredTotalGold === 'number') state.totalGoldEarned = restoredTotalGold;
+    state.challenge.savedTotalGold = null;
     invalidateAggCache(); recalcAndCacheGPS(state);
     return { ok:true };
   }
@@ -703,7 +726,7 @@
     if (!ch) return { ok:false, reason:'no_active' };
     const goal = ch.goalTotalGold || Infinity;
     if ((state.totalGoldEarned || 0) < goal) return { ok:false, reason:'goal' };
-    state.challenge = state.challenge || { activeId:null, completed:{}, bestSec:{}, ascendedInChallenge:0 };
+    state.challenge = state.challenge || { activeId:null, completed:{}, bestSec:{}, ascendedInChallenge:0, savedTotalGold:null };
     state.challenge.completed = state.challenge.completed || {};
     state.challenge.bestSec = state.challenge.bestSec || {};
     const now = nowSec();
@@ -711,7 +734,10 @@
     const prev = state.challenge.bestSec[ch.id] ?? Infinity;
     state.challenge.bestSec[ch.id] = Math.min(prev, sec);
     state.challenge.completed[ch.id] = true;
+    const restoredTotalGold = state.challenge.savedTotalGold;
     state.challenge.activeId = null;
+    if (typeof restoredTotalGold === 'number') state.totalGoldEarned = restoredTotalGold;
+    state.challenge.savedTotalGold = null;
     invalidateAggCache(); recalcAndCacheGPS(state);
     return { ok:true, id:ch.id, firstClear: !Number.isFinite(prev), sec };
   }
@@ -739,6 +765,7 @@
     attemptBuyLegacyInternal: (legacyId, maxCount) => attemptBuyLegacyInternal(legacyId, maxCount),
     canBuyLegacyInternal: (legacyId, st) => canBuyLegacyInternal(legacyId, st || state),
     buyAscensionUpgradeInternal: (id) => buyAscensionUpgradeInternal(id),
+    getAscUpgradeMaxLevel: (def, st) => ascUpgradeMaxLevel(def, st || state),
     buyCelestialUpgradeInternal: (id) => buyCelestialUpgradeInternal(id),
     startChallengeInternal: (id) => startChallengeInternal(id),
     abandonChallengeInternal: () => abandonChallengeInternal(),
