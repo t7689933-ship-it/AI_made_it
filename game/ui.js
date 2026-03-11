@@ -1027,13 +1027,13 @@
 
     // Save/Load
     document.getElementById('downloadSave')?.addEventListener('click', ()=>{
-      try{ const json = JSON.stringify(E.getState(), null, 2); const blob = new Blob([json], { type:'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `inc_save_${new Date().toISOString().replace(/[:.]/g,'-')}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href); showTypedToast('general','ダウンロードしました'); } catch(e){}
+      try{ const json = SM.stringifyState(E.getState(), 2); const blob = new Blob([json], { type:'application/json' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `inc_save_${new Date().toISOString().replace(/[:.]/g,'-')}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href); showTypedToast('general','ダウンロードしました'); } catch(e){}
     });
     document.getElementById('copySave')?.addEventListener('click', ()=>{
-      try{ const json = JSON.stringify(E.getState(), null, 2); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(json).then(()=>showTypedToast('general','コピーしました')); else document.getElementById('pasteJson').value = json; } catch(e){}
+      try{ const json = SM.stringifyState(E.getState(), 2); if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(json).then(()=>showTypedToast('general','コピーしました')); else document.getElementById('pasteJson').value = json; } catch(e){}
     });
     document.getElementById('importPasteBtn')?.addEventListener('click', ()=>{
-      try{ const obj = JSON.parse(document.getElementById('pasteJson').value.trim()); if (!confirm('上書きしますか？')) return; const migrated = SM.importState(obj); E.setState(migrated); SM.saveState(E.getState()); svgDirty=true; syncUIAfterChange(); buildAchievementsUI(); buildSettingsUI(); showTypedToast('general','インポート完了'); } catch(e){ alert('インポートエラー: '+e.message); } 
+      try{ const obj = SM.parseStateText(document.getElementById('pasteJson').value.trim()); if (!confirm('上書きしますか？')) return; const migrated = SM.importState(obj); E.setState(migrated); SM.saveState(E.getState()); svgDirty=true; syncUIAfterChange(); buildAchievementsUI(); buildSettingsUI(); showTypedToast('general','インポート完了'); } catch(e){ alert('インポートエラー: '+e.message); } 
     });
     document.getElementById('reset')?.addEventListener('click', ()=>{
       if (!confirm('本当に全てのデータをリセットしますか？')) return;
@@ -1042,7 +1042,7 @@
     document.getElementById('triggerFileInput')?.addEventListener('click', ()=> document.getElementById('fileInput').click());
     document.getElementById('fileInput')?.addEventListener('change', (ev)=>{
       const f = ev.target.files && ev.target.files[0]; if (!f) return;
-      const r = new FileReader(); r.onload = ()=>{ try{ const obj = JSON.parse(r.result); if (!confirm('上書きしますか？')) { ev.target.value=''; return; } const migrated = SM.importState(obj); E.setState(migrated); SM.saveState(E.getState()); svgDirty=true; syncUIAfterChange(); buildAchievementsUI(); buildSettingsUI(); showTypedToast('general','ファイル読み込み完了'); } catch(e){ alert('インポートエラー: '+e.message); } }; r.readAsText(f); ev.target.value = ''; 
+      const r = new FileReader(); r.onload = ()=>{ try{ const obj = SM.parseStateText(r.result); if (!confirm('上書きしますか？')) { ev.target.value=''; return; } const migrated = SM.importState(obj); E.setState(migrated); SM.saveState(E.getState()); svgDirty=true; syncUIAfterChange(); buildAchievementsUI(); buildSettingsUI(); showTypedToast('general','ファイル読み込み完了'); } catch(e){ alert('インポートエラー: '+e.message); } }; r.readAsText(f); ev.target.value = ''; 
     });
   }
 
@@ -1054,9 +1054,9 @@
     const body = document.getElementById('updateModalBody');
     if (!modal || !body) return;
     body.textContent = `${C.APP_VERSION} の主な更新
-- Infinity表示を「1.8e308」に統一
-- レガシーツリーSVGのモバイル表示を調整し可読性を改善
-- Abyss専用タブと深淵改造（Abyss Shard消費の恒久強化）を追加`;
+- Infinity/NaN を含むセーブデータの保存・読込形式を改善
+- ダウンロード/コピー/インポートでも特殊数値を安全に扱えるよう修正
+- Infinity到達後でも進捗が破損しないよう永続化の安定性を向上`;
     modal.style.display = 'flex';
     document.getElementById('closeUpdateModal')?.addEventListener('click', ()=>{
       modal.style.display = 'none';

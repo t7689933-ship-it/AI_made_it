@@ -668,7 +668,7 @@
 ## Plan (2026-03-10 インポート/リセットの即時保存バグ修正)
 - [ ] セーブ導線（インポート/リセット）の再現確認
 - [ ] 原因箇所を最小修正（即時 saveState）
-- [ ] 検証コマンド実行とログ追記
+- [x] 検証コマンド実行とログ追記
 
 ## Progress Log (2026-03-10 インポート/リセットの即時保存バグ修正)
 - 着手: `game/ui.js` の Save/Load イベント処理を確認。インポート/リセット後に `SM.saveState` が呼ばれておらず、オートセーブ前リロードで変更喪失の可能性を確認。
@@ -732,3 +732,24 @@
 ## Verify Log (2026-03-11 Infinity表示 / Legacy SVGモバイル改善 / Abyssタブ追加)
 - ✅ `node --check game/ui.js && node --check game/engine.js && node --check game/state.js && node --check game/config.js`
 - ✅ `python -m http.server 4173` でローカル起動後、Playwrightでモバイル表示確認とスクリーンショット取得
+
+
+## Plan (2026-03-11 Infinityセーブ破損修正)
+- [x] セーブ/ロード・インポート経路でInfinity値の保持可否を確認
+- [x] state/uiの最小修正でInfinity/NaNを安全に永続化
+- [x] 検証コマンド実行とログ追記
+
+## Progress Log (2026-03-11 Infinityセーブ破損修正)
+- 調査: `JSON.stringify` の仕様により `Infinity/-Infinity/NaN` が `null` 化され、localStorage保存・ダウンロードJSON・コピーJSON経路で進捗が破損することを確認。
+- 修正: `game/state.js` に特殊数値シリアライズ/デシリアライズ（replacer/reviver）を実装し、`saveState/loadState` を新形式へ切替。
+- 修正: `game/ui.js` のダウンロード/コピー/貼り付けインポート/ファイルインポートを `StateManager.stringifyState/parseStateText` 経由に統一。
+- 付随対応: `APP_VERSION` を `Ver.1.20.1` に更新し、アップデート情報タブ・更新モーダル文言を今回修正内容へ更新。
+
+## Verify Log (2026-03-11 Infinityセーブ破損修正)
+- ✅ `node --check game/state.js && node --check game/ui.js && node --check game/config.js && node --check game/engine.js`
+- ✅ `node - <<'NODE' ... NODE`（`gold=Infinity` / `totalGoldEarned=NaN` を保存→読込して値保持を確認。`stringifyState/parseStateText` の往復でも `Infinity/-Infinity/NaN` が保持されることを確認）
+
+## Plan 完了状況 (2026-03-11 Infinityセーブ破損修正)
+- [x] セーブ/ロード・インポート経路でInfinity値の保持可否を確認
+- [x] state/uiの最小修正でInfinity/NaNを安全に永続化
+- [x] 検証コマンド実行とログ追記
