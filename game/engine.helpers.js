@@ -1,0 +1,136 @@
+// engine.helpers.js — engine用の純粋ヘルパー群
+(function(){
+  function nowSec(){ return Date.now()/1000; }
+  function deepCopy(o){ try { return JSON.parse(JSON.stringify(o)); } catch(e){ return Object.assign({}, o); } }
+
+  function getActiveChallengeDef(C, st){
+    const activeId = st && st.challenge && st.challenge.activeId;
+    if (!activeId) return null;
+    return (C.CHALLENGES || []).find(ch => ch.id === activeId) || null;
+  }
+
+  function getUnlockedPrestigeLayerCount(C, st){
+    let count = 0;
+    for (const layer of (C.PRESTIGE_LAYERS || [])){
+      if (((st && st.prestigeEarnedTotal) || 0) >= (layer.need || 0)) count += 1;
+    }
+    return count;
+  }
+
+  function getUnlockedCelestialLayerCount(C, st){
+    let count = 0;
+    for (const layer of (C.CELESTIAL_LAYERS || [])){
+      if (((st && st.ascEarnedTotal) || 0) >= (layer.need || 0)) count += 1;
+    }
+    return count;
+  }
+
+  function getPrestigeLayerStatus(C, st){
+    return (C.PRESTIGE_LAYERS || []).map(layer=>({
+      id: layer.id,
+      name: layer.name,
+      need: layer.need || 0,
+      unlocked: ((st && st.prestigeEarnedTotal) || 0) >= (layer.need || 0),
+      desc: layer.desc || '',
+      bonus: layer.bonus || null
+    }));
+  }
+
+  function getCelestialLayerStatus(C, st){
+    return (C.CELESTIAL_LAYERS || []).map(layer=>({
+      id: layer.id,
+      name: layer.name,
+      need: layer.need || 0,
+      unlocked: ((st && st.ascEarnedTotal) || 0) >= (layer.need || 0),
+      desc: layer.desc || '',
+      bonus: layer.bonus || null
+    }));
+  }
+
+  function hasSpecialAscUpgrade(C, st, kind){
+    const upgrades = C.ASC_UPGRADES || [];
+    for (const def of upgrades){
+      if (def.type !== 'special') continue;
+      if (!def.payload || def.payload.kind !== kind) continue;
+      if ((((st && st.ascOwned) || {})[def.id] || 0) > 0) return true;
+    }
+    return false;
+  }
+
+  function ascCapBonusFromCelestial(C, st){
+    let bonus = 0;
+    for (const def of (C.CELESTIAL_UPGRADES || [])){
+      if (def.type !== 'ascShopCapBoost') continue;
+      const lv = ((st && st.celestialOwned && st.celestialOwned[def.id]) ? st.celestialOwned[def.id] : 0);
+      if (lv <= 0) continue;
+      bonus += (def.payload && def.payload.addMaxLevel ? def.payload.addMaxLevel : 0) * lv;
+    }
+    return bonus;
+  }
+
+  function ascUpgradeMaxLevel(C, st, def){
+    if (!def || typeof def.maxLevel !== 'number') return Infinity;
+    return def.maxLevel + ascCapBonusFromCelestial(C, st);
+  }
+
+  function legacyCapBonusFromAsc(C, st){
+    let bonus = 0;
+    for (const def of (C.ASC_UPGRADES||[])){
+      if (def.type !== 'legacyCapBoost') continue;
+      const lv = (st && st.ascOwned && st.ascOwned[def.id]) ? st.ascOwned[def.id] : 0;
+      if (lv <= 0) continue;
+      bonus += (def.payload && def.payload.addMaxLevel ? def.payload.addMaxLevel : 0) * lv;
+    }
+    return bonus;
+  }
+
+  function legacyMaxLevel(C, st, def){
+    if (!def || typeof def.maxLevel !== 'number') return Infinity;
+    return def.maxLevel + legacyCapBonusFromAsc(C, st);
+  }
+
+  function legacyCostForNextLevel(C, st, def, currentLevel){
+    if (currentLevel >= legacyMaxLevel(C, st, def)) return Infinity;
+    return Math.floor(def.baseCost * Math.pow(def.costMult, currentLevel));
+  }
+
+  function calcPrestigeGainFromTotal(C, totalGoldEarned){
+    if (totalGoldEarned <= 0) return 0;
+    return Math.floor(Math.sqrt(totalGoldEarned / (C.PRESTIGE_BASE_DIV || 1000)));
+  }
+
+  function calcAscGainFromPrestige(C, prestigeEarned){
+    const raw = Math.sqrt(Math.max(0, prestigeEarned || 0) / (C.ASC_BASE_DIV || 25));
+    const softcap = C.ASC_SOFTCAP_START || 20;
+    if (raw <= softcap) return Math.floor(raw);
+    const exp = C.ASC_SOFTCAP_EXPONENT || 0.72;
+    return Math.floor(softcap + Math.pow(raw - softcap, exp));
+  }
+
+  function calcCelestialGain(unlockedLayers, ascGain){
+    if (ascGain <= 0) return 0;
+    return Math.max(1, Math.floor(ascGain / 3) + Math.floor(unlockedLayers / 2));
+  }
+
+  function abyssUpgradeCost(def, lvl){
+    return Math.max(1, Math.floor((def.baseCost || 1) * Math.pow(def.costMult || 1, lvl || 0)));
+  }
+
+  window.EngineHelpers = {
+    nowSec,
+    deepCopy,
+    getActiveChallengeDef,
+    getUnlockedPrestigeLayerCount,
+    getUnlockedCelestialLayerCount,
+    getPrestigeLayerStatus,
+    getCelestialLayerStatus,
+    hasSpecialAscUpgrade,
+    ascUpgradeMaxLevel,
+    legacyMaxLevel,
+    legacyCostForNextLevel,
+    calcPrestigeGainFromTotal,
+    calcAscGainFromPrestige,
+    calcCelestialGain,
+    abyssUpgradeCost
+  };
+})();
