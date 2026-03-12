@@ -791,3 +791,52 @@
 ## Verify Log (2026-03-12 未使用コード整理 / 最適化)
 - `node --check game/engine.js && node --check game/ui.js && node --check game/config.js && node --check game/state.js` : 成功
 - `rg -n "hasAscSpecialInState" game/engine.js` : 該当なし（未使用コード削除確認）
+
+## Plan (2026-03-12 ui.js / engine.js 分割)
+- [ ] ui.js / engine.js の現状依存と読込順を確認
+- [ ] 既存動作を維持したまま複数ファイルへ分割
+- [ ] バージョン表記・アップデート情報・更新モーダルを更新
+- [ ] 検証コマンド実行とログ追記
+
+## Progress Log (2026-03-12 ui.js / engine.js 分割)
+- 着手: `index.html` の script 読み込み順と `game/engine.js` / `game/ui.js` の依存関係を確認。
+- 分割: `game/engine.js` の本体を `game/engine.app.js` に移設し、`game/engine.js` は互換ブートストラップへ縮小。
+- 分割: `game/ui.js` の本体を `game/ui.app.js` に移設し、`game/ui.js` は互換ブートストラップへ縮小。
+- 読込順調整: `index.html` に `engine.app.js` / `ui.app.js` を追加し、既存の `engine.js` / `ui.js` は互換用として維持。
+- バージョン更新: `game/config.js` を `Ver.1.22.0` に更新し、`index.html` のアップデート履歴と `game/ui.app.js` の更新モーダル文言を今回内容に更新。
+
+## Verify Log (2026-03-12 ui.js / engine.js 分割)
+- `node --check game/engine.app.js && node --check game/engine.js && node --check game/ui.app.js && node --check game/ui.js && node --check game/config.js && node --check game/state.js` : 成功
+
+## Plan 完了状況 (2026-03-12 ui.js / engine.js 分割)
+- [x] ui.js / engine.js の現状依存と読込順を確認
+- [x] 既存動作を維持したまま複数ファイルへ分割
+- [x] バージョン表記・アップデート情報・更新モーダルを更新
+- [x] 検証コマンド実行とログ追記
+
+## Plan (2026-03-12 ui.js / engine.js 再分割対応)
+- [ ] 前回差分の問題点を整理（実体移動のみになっている点）
+- [ ] engine機能の一部を責務別ファイルへ抽出して参照化
+- [ ] ui機能の一部を責務別ファイルへ抽出して参照化
+- [ ] バージョン表記・アップデート情報・更新モーダルを更新
+- [ ] 検証コマンド実行とログ追記
+
+## Progress Log (2026-03-12 ui.js / engine.js 再分割対応)
+- 前回対応の課題を再確認し、「実体ファイル名の退避」ではなく、機能単位の分割へ方針変更。
+- `game/engine.helpers.js` を新設し、進行計算・層判定・上限/コスト式・深淵強化式などの共通ロジックを抽出。
+- `game/engine.app.js` は `EngineHelpers` を参照する構成に変更し、エンジン本体から重複ヘルパー定義を削減。
+- `game/ui.helpers.js` を新設し、数値整形・トースト表示・Ascension判定・ボーナス文言化を抽出。
+- `game/ui.app.js` は `UIHelpers` を参照する構成に変更し、UI本体から共通ヘルパーを分離。
+- `index.html` の script 読み込み順を更新し、helper → app → 互換bootstrap の順で初期化。
+- `APP_VERSION` を `Ver.1.22.1` に更新し、アップデート情報と更新モーダル文言を今回内容へ更新。
+
+## Verify Log (2026-03-12 ui.js / engine.js 再分割対応)
+- `node --check game/engine.helpers.js && node --check game/engine.app.js && node --check game/engine.js && node --check game/ui.helpers.js && node --check game/ui.app.js && node --check game/ui.js && node --check game/config.js && node --check game/state.js` : 成功
+- `rg -n "EngineHelpers|UIHelpers|engine.helpers.js|ui.helpers.js|Ver.1.22.1" index.html game/*.js` : 成功（分割参照とバージョン反映を確認）
+
+## Plan 完了状況 (2026-03-12 ui.js / engine.js 再分割対応)
+- [x] 前回差分の問題点を整理（実体移動のみになっている点）
+- [x] engine機能の一部を責務別ファイルへ抽出して参照化
+- [x] ui機能の一部を責務別ファイルへ抽出して参照化
+- [x] バージョン表記・アップデート情報・更新モーダルを更新
+- [x] 検証コマンド実行とログ追記
