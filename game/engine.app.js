@@ -185,6 +185,10 @@
     let cost = unitBaseCost(def, owned) * (agg.costMult || 1);
     const activeChallenge = getActiveChallengeDef(st);
     if (activeChallenge && activeChallenge.effects && typeof activeChallenge.effects.costMult === 'number') cost *= activeChallenge.effects.costMult;
+    if (activeChallenge && activeChallenge.effects && typeof activeChallenge.effects.costRampByOwnedDiv === 'number' && activeChallenge.effects.costRampByOwnedDiv > 0){
+      const totalOwned = Object.values(st.units || {}).reduce((acc, v)=>acc + (Number(v)||0), 0);
+      cost *= 1 + (totalOwned / activeChallenge.effects.costRampByOwnedDiv);
+    }
     return Math.max(1, Math.floor(cost));
   }
   function upgradeCostNextLevel(def, currentLevel){ return Math.floor(def.baseCost * Math.pow(def.costMult, currentLevel)); }
@@ -196,8 +200,14 @@
     const agg = getAggregates(st);
     let total = agg.flatGPS || 0;
     const U = C.UNIT_DEFS || [];
+    const activeChallenge = getActiveChallengeDef(st);
+    let highestOwnedUnitId = null;
+    if (activeChallenge && activeChallenge.effects && activeChallenge.effects.onlyHighestUnitProduces){
+      for (const def of U){ if ((st.units[def.id] || 0) > 0) highestOwnedUnitId = def.id; }
+    }
     for (const def of U){
       const owned = st.units[def.id] || 0;
+      if (highestOwnedUnitId && def.id !== highestOwnedUnitId) continue;
       let unitGps = def.baseGPS * owned;
       if (agg.unitMults && agg.unitMults[def.id]) unitGps *= agg.unitMults[def.id];
       for (const up of (C.UPGRADE_DEFS||[])){
@@ -212,9 +222,12 @@
       if (up.type === 'globalMult') globalMult *= Math.pow(1 + (up.payload.multPerLevel||0), ul);
     }
     let out = total * globalMult * (agg.globalMult || 1);
-    const activeChallenge = getActiveChallengeDef(st);
     if (activeChallenge && activeChallenge.effects && typeof activeChallenge.effects.globalMult === 'number'){
       out *= activeChallenge.effects.globalMult;
+    }
+    if (activeChallenge && activeChallenge.effects && typeof activeChallenge.effects.globalMultPerOwned === 'number'){
+      const totalOwned = Object.values(st.units || {}).reduce((acc, v)=>acc + (Number(v)||0), 0);
+      out *= Math.pow(activeChallenge.effects.globalMultPerOwned, totalOwned);
     }
     return out;
   }

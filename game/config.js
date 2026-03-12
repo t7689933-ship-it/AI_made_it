@@ -5,7 +5,7 @@
   const C = {
     SAVE_KEY: 'inc.split.full.v4',
     SAVE_VERSION: 13,
-    APP_VERSION: 'Ver.1.22.2',
+    APP_VERSION: 'Ver.1.23.0',
     UI_UPDATE_INTERVAL_MS: 50,
     AUTO_SAVE_INTERVAL: 5000,
     MAX_OFFLINE_SECONDS: 60*60*24,
@@ -175,6 +175,30 @@
       goalTotalGold: 2200000,
       effects:{ globalMult:0.18, costMult:2.6, forceStartGold:1 },
       reward:{ type:'globalMult', mult:1.45, text:'恒久: 全体 ×1.45' }
+    },
+    {
+      id:'ch_dimensional_drain',
+      name:'Challenge 9: Dimensional Drain',
+      desc:'Antimatter Dimensions風。所持ユニット総数が増えるほど全体生産が急減（1台ごとに×0.975）。',
+      goalTotalGold: 1.0e260,
+      effects:{ globalMultPerOwned:0.975 },
+      reward:{ type:'costMult', mult:0.82, text:'恒久: コスト ×0.82' }
+    },
+    {
+      id:'ch_tickspeed_debt',
+      name:'Challenge 10: Tickspeed Debt',
+      desc:'Antimatter Dimensions風。ユニット総数が増えるほど購入コスト倍率が累積加速（1 + 総数/700）。',
+      goalTotalGold: 1.0e285,
+      effects:{ costRampByOwnedDiv:700 },
+      reward:{ type:'prestigeEffectAdd', add:0.14, text:'恒久: Prestige効果 +0.14' }
+    },
+    {
+      id:'ch_abyssal_singularity',
+      name:'Challenge 11: Abyssal Singularity',
+      desc:'Antimatter Dimensions風最終試練。最高Tierユニットのみ生産可能、アップグレード不可、開始1G固定。',
+      goalTotalGold: 1.8e308,
+      effects:{ onlyHighestUnitProduces:true, disableUpgrades:true, forceStartGold:1 },
+      reward:{ type:'globalMult', mult:2.2, text:'恒久: 全体 ×2.20' }
     }
   ];
 
@@ -209,6 +233,7 @@
     { id:'ach_celestial_apprentice', name:'星工学の見習い', desc:'Celestialアップグレードを2回購入する', type:'celestialUpgradeCount', target:2, bonus:{type:'globalMult', mult:1.18} },
     { id:'ach_celestial_architect', name:'星界設計者', desc:'Celestialアップグレードを8回購入する', type:'celestialUpgradeCount', target:8, bonus:{type:'costMult', mult:0.88} },
     { id:'ach_challenge_hepta', name:'七重試練の制覇者', desc:'全Challenge(7種)をクリアする', type:'challengeClearCount', target:7, bonus:{type:'prestigeEffectAdd', add:0.1} },
+    { id:'ach_abyss_challenge_master', name:'深淵試練の設計者', desc:'全Challenge(11種)をクリアする', type:'challengeClearCount', target:11, bonus:{type:'globalMult', mult:2.0} },
     { id:'ach_ascension_galaxy', name:'銀河渡り', desc:'累計Ascension AP 180到達', type:'ascend', target:180, bonus:{type:'flatGPS', gps:6000} },
     { id:'ach_layer_master', name:'層の監督者', desc:'Prestige層5段階 + Celestial層4段階を解放', type:'dualLayerCount', target:{ prestige:5, celestial:4 }, bonus:{type:'globalMult', mult:1.35} },
     { id:'ach_event_horizon', name:'地平線踏破', desc:'Challenge 8 をクリアする', type:'challengeClearCount', target:8, bonus:{type:'globalMult', mult:1.5} },

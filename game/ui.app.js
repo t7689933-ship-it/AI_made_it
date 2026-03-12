@@ -587,6 +587,9 @@
 進捗: ${fmtNumber(st.totalGoldEarned || 0)} / ${fmtNumber(active.goalTotalGold || 0)}
 アップグレード制限: ${active.effects && active.effects.disableUpgrades ? 'あり' : 'なし'}
 ユニット単一路線: ${active.effects && active.effects.singleUnitOnly ? 'あり' : 'なし'}
+最高Tierのみ生産: ${active.effects && active.effects.onlyHighestUnitProduces ? 'あり' : 'なし'}
+ユニット数デバフ: ${active.effects && active.effects.globalMultPerOwned ? `あり (×${active.effects.globalMultPerOwned}/台)` : 'なし'}
+ユニット数コスト加速: ${active.effects && active.effects.costRampByOwnedDiv ? `あり (1 + 総数/${active.effects.costRampByOwnedDiv})` : 'なし'}
 累計Gold復元待機: ${fmtNumber(st.challenge.savedTotalGold || 0)}`;
       else status.textContent = `待機中
 クリア数: ${fmtNumber(Object.keys(st.challenge.completed || {}).filter(k=>st.challenge.completed[k]).length)} / ${fmtNumber((C.CHALLENGES || []).length)}`;
@@ -943,9 +946,9 @@
     const body = document.getElementById('updateModalBody');
     if (!modal || !body) return;
     body.textContent = `${C.APP_VERSION} の主な更新
-- engine.challenge.js を追加し、Challenge進行アクションを engine.app.js から分離
-- ui.minigame.js を追加し、Ascensionミニゲーム制御を ui.app.js から分離
-- 分割モジュールの読み込み順を更新し、既存挙動を維持`;
+- Abyss到達までを想定した新Challenge 3種（Dimensional Drain / Tickspeed Debt / Abyssal Singularity）を追加
+- Antimatter Dimensions風ギミック（ユニット数デバフ・コスト加速・最高Tierのみ生産）をChallenge効果として実装
+- Challenge全11種クリア向けの新実績を追加`;
     modal.style.display = 'flex';
     document.getElementById('closeUpdateModal')?.addEventListener('click', ()=>{
       modal.style.display = 'none';
