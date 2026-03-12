@@ -5,9 +5,26 @@
 
   const SAVE_KEY = C.SAVE_KEY;
   const SAVE_VERSION = C.SAVE_VERSION || 1;
+  const SPECIAL_NUM_PREFIX = '__NUM__:';
 
   function nowSec(){ return Date.now()/1000; }
   function deepCopy(o){ return JSON.parse(JSON.stringify(o)); }
+  function jsonNumberReplacer(_k, v){
+    if (typeof v !== 'number') return v;
+    if (Number.isFinite(v)) return v;
+    if (Number.isNaN(v)) return `${SPECIAL_NUM_PREFIX}NaN`;
+    return v > 0 ? `${SPECIAL_NUM_PREFIX}Infinity` : `${SPECIAL_NUM_PREFIX}-Infinity`;
+  }
+  function jsonNumberReviver(_k, v){
+    if (typeof v !== 'string' || !v.startsWith(SPECIAL_NUM_PREFIX)) return v;
+    const tag = v.slice(SPECIAL_NUM_PREFIX.length);
+    if (tag === 'Infinity') return Infinity;
+    if (tag === '-Infinity') return -Infinity;
+    if (tag === 'NaN') return NaN;
+    return v;
+  }
+  function stringifyState(s, space){ return JSON.stringify(s, jsonNumberReplacer, space); }
+  function parseStateText(text){ return JSON.parse(text, jsonNumberReviver); }
 
   const defaultState = {
     version: SAVE_VERSION,
@@ -125,7 +142,7 @@
     return merged;
   }
 
-  function loadRaw(){ try{ const s = localStorage.getItem(SAVE_KEY); return s ? JSON.parse(s) : null; } catch(e){ return null; } }
+  function loadRaw(){ try{ const s = localStorage.getItem(SAVE_KEY); return s ? parseStateText(s) : null; } catch(e){ return null; } }
   function loadState(){
     const raw = loadRaw();
     if (!raw) return deepCopy(defaultState);
@@ -143,7 +160,7 @@
     try{
       s.version = SAVE_VERSION;
       s.lastSavedAt = nowSec();
-      localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+      localStorage.setItem(SAVE_KEY, stringifyState(s));
       const el = document.getElementById('lastSave');
       if (el) el.textContent = new Date(s.lastSavedAt*1000).toLocaleString();
     } catch(e){ console.error(e); }
@@ -153,6 +170,8 @@
   window.StateManager = {
     defaultState: defaultState,
     saveVersion: SAVE_VERSION,
+    stringifyState: stringifyState,
+    parseStateText: parseStateText,
     loadState: loadState,
     saveState: saveState,
     importState: importState,
